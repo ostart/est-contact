@@ -1,0 +1,15 @@
+services:
+  mysql:
+    image: mysql:5.7
+    container_name: est_contact
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: est_contact
+      MYSQL_USER: est_contact
+      MYSQL_PASSWORD: secret
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+volumes:
+  mysql_data:
