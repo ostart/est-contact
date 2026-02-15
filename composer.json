@@ -9,6 +9,7 @@
         "filament/filament": "^5.2",
         "laravel/framework": "^11.0",
         "laravel/tinker": "^2.9",
+        "propaganistas/laravel-phone": "^6.0",
         "spatie/laravel-activitylog": "^4.11",
         "spatie/laravel-permission": "^6.24"
     },
@@ -29,7 +30,10 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "files": [
+            "app/Helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

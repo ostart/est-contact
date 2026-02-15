@@ -5,8 +5,10 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
 use BackedEnum;
+use Filament\Actions;
 use Filament\Forms\Components;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components as SchemaComponents;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Columns;
@@ -28,11 +30,17 @@ class UserResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        // Показывать только для Администраторов
+        return auth()->user()->hasRole('administrator');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                Components\Section::make('Основная информация')
+                SchemaComponents\Section::make('Основная информация')
                     ->schema([
                         Components\TextInput::make('name')
                             ->label('Имя')
@@ -56,30 +64,27 @@ class UserResource extends Resource
                             ->columnSpanFull(),
                     ])->columns(2),
 
-                Components\Section::make('Роли и доступ')
+                SchemaComponents\Section::make('Роли и доступ')
                     ->schema([
                         Components\CheckboxList::make('roles')
                             ->label('Роли')
                             ->relationship('roles', 'name')
-                            ->options(Role::all()->pluck('name', 'name'))
-                            ->default(['leader'])
+                            ->options(Role::all()->pluck('name', 'id'))
+                            ->default(fn ($record) => $record ? [] : [Role::where('name', 'leader')->first()?->id])
                             ->required()
                             ->columns(4)
                             ->columnSpanFull(),
 
                         Components\Toggle::make('is_approved')
                             ->label('Доступ в систему разрешен')
-                            ->default(false)
-                            ->helperText('Разрешить пользователю доступ к системе'),
+                            ->default(false),
 
                         Components\Toggle::make('has_dashboard_access')
                             ->label('Доступ к Dashboard')
-                            ->default(false)
-                            ->helperText('Предоставить доступ к главной панели'),
+                            ->default(false),
 
                         Components\Toggle::make('email_verified')
                             ->label('Email подтвержден')
-                            ->helperText('Отметить email как подтвержденный')
                             ->afterStateHydrated(fn ($component, $record) => $component->state($record?->email_verified_at !== null))
                             ->dehydrated(false)
                             ->live()
@@ -111,7 +116,11 @@ class UserResource extends Resource
                 Columns\TextColumn::make('roles.name')
                     ->label('Роли')
                     ->badge()
-                    ->separator(','),
+                    ->formatStateUsing(fn ($state) => $state)
+                    ->listWithLineBreaks()
+                    ->bulleted(false)
+                    ->limitList(5)
+                    ->expandableLimitedList(),
 
                 Columns\IconColumn::make('is_approved')
                     ->label('Доступ')
@@ -130,7 +139,7 @@ class UserResource extends Resource
 
                 Columns\TextColumn::make('created_at')
                     ->label('Создан')
-                    ->dateTime('d.m.Y H:i')
+                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -152,13 +161,16 @@ class UserResource extends Resource
                     ->nullable(),
             ])
             ->recordActions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Actions\EditAction::make()
+                    ->iconButton()
+                    ->tooltip('Изменить'),
+                Actions\DeleteAction::make()
+                    ->iconButton()
+                    ->tooltip('Удалить'),
             ])
             ->toolbarActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -177,5 +189,10 @@ class UserResource extends Resource
     public static function canViewAny(): bool
     {
         return auth()->user()->hasAnyRole(['administrator', 'superadmin']);
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) User::count();
     }
 }

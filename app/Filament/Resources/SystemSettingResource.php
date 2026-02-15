@@ -5,8 +5,10 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\SystemSettingResource\Pages;
 use App\Models\SystemSetting;
 use BackedEnum;
+use Filament\Actions;
 use Filament\Forms\Components;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components as SchemaComponents;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Columns;
@@ -26,11 +28,17 @@ class SystemSettingResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        // Показывать только для Суперадминов
+        return auth()->user()->hasRole('superadmin');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                Components\Section::make('Настройка системы')
+                SchemaComponents\Section::make('Настройка системы')
                     ->schema([
                         Components\TextInput::make('key')
                             ->label('Ключ')
@@ -53,7 +61,7 @@ class SystemSettingResource extends Resource
                                 }
 
                                 return match ($record->key) {
-                                    'contact_processing_timeout' => 'Таймаут обработки контакта в днях. По умолчанию: 30 дней.',
+                                    'contact_processing_timeout_days' => 'Таймаут обработки контакта в днях. По умолчанию: 30 дней.',
                                     default => 'Нет описания для этой настройки',
                                 };
                             })
@@ -76,28 +84,28 @@ class SystemSettingResource extends Resource
                     ->limit(50)
                     ->searchable(),
 
+                Columns\TextColumn::make('created_at')
+                    ->label('Создано')
+                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state))
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Columns\TextColumn::make('updated_at')
                     ->label('Обновлено')
-                    ->dateTime('d.m.Y H:i')
+                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state))
                     ->sortable(),
             ])
             ->filters([
                 //
             ])
             ->recordActions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Actions\EditAction::make()
+                    ->iconButton()
+                    ->tooltip('Изменить'),
             ])
-            ->toolbarActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ])
+            ->defaultSort('created_at', 'desc')
             ->emptyStateHeading('Нет настроек')
-            ->emptyStateDescription('Создайте первую настройку системы')
-            ->emptyStateActions([
-                Tables\Actions\CreateAction::make(),
-            ]);
+            ->emptyStateDescription('Настройки создаются через сидер или миграции.');
     }
 
     public static function getPages(): array
@@ -110,5 +118,15 @@ class SystemSettingResource extends Resource
     public static function canViewAny(): bool
     {
         return auth()->user()->hasRole('superadmin');
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return false;
     }
 }

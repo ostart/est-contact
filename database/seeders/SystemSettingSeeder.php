@@ -13,7 +13,7 @@ class SystemSettingSeeder extends Seeder
     public function run(): void
     {
         $settings = [
-            ['key' => 'contact_processing_timeout', 'value' => '30'],
+            ['key' => 'contact_processing_timeout_days', 'value' => '30'],
         ];
 
         foreach ($settings as $setting) {

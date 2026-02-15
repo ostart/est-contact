@@ -28,7 +28,7 @@ class CheckOverdueContacts extends Command
      */
     public function handle()
     {
-        $timeout = (int) SystemSetting::get('contact_processing_timeout', 30);
+        $timeout = (int) SystemSetting::get('contact_processing_timeout_days', 30);
         $cutoffDate = now()->subDays($timeout);
 
         $overdueContacts = Contact::where('status', ContactStatus::ASSIGNED->value)

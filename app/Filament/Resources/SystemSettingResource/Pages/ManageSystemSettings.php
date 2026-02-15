@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\SystemSettingResource\Pages;
 
 use App\Filament\Resources\SystemSettingResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 
 class ManageSystemSettings extends ManageRecords
@@ -12,8 +11,6 @@ class ManageSystemSettings extends ManageRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\CreateAction::make(),
-        ];
+        return [];
     }
 }

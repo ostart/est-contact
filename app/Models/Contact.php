@@ -47,12 +47,12 @@ class Contact extends Model
 
     public function comments(): HasMany
     {
-        return $this->hasMany(ContactComment::class);
+        return $this->hasMany(ContactComment::class)->orderByDesc('created_at');
     }
 
     public function statusHistories(): HasMany
     {
-        return $this->hasMany(ContactStatusHistory::class);
+        return $this->hasMany(ContactStatusHistory::class)->orderByDesc('created_at');
     }
 
     public function isOverdue(): bool
@@ -61,7 +61,7 @@ class Contact extends Model
             return false;
         }
 
-        $timeout = SystemSetting::get('contact_processing_timeout', 30);
+        $timeout = SystemSetting::get('contact_processing_timeout_days', 30);
         $assignedDate = $this->statusHistories()
             ->where('new_status', ContactStatus::ASSIGNED->value)
             ->latest()

@@ -14,6 +14,7 @@ class ContactStatusHistory extends Model
         'user_id',
         'old_status',
         'new_status',
+        'created_at',
     ];
 
     protected $casts = [

@@ -251,7 +251,7 @@
   - Установить has_dashboard_access = true
 
 - [ ] Создать SystemSettingsSeeder:
-  - Установить contact_processing_timeout = 30
+  - Установить contact_processing_timeout_days = 30
 
 - [ ] Зарегистрировать все seeders в DatabaseSeeder
 

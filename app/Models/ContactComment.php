@@ -13,6 +13,11 @@ class ContactComment extends Model
         'comment',
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);

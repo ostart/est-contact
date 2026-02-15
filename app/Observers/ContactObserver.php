@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Contact;
 use App\Models\ContactStatusHistory;
 use App\Notifications\ContactAssignedNotification;
+use Carbon\Carbon;
 
 class ContactObserver
 {
@@ -13,12 +14,13 @@ class ContactObserver
      */
     public function created(Contact $contact): void
     {
-        // Логируем начальный статус
+        // Логируем начальный статус (created_at явно в UTC)
         ContactStatusHistory::create([
             'contact_id' => $contact->id,
             'user_id' => auth()->id() ?? $contact->created_by,
             'old_status' => null,
             'new_status' => $contact->status->value,
+            'created_at' => Carbon::now('UTC'),
         ]);
     }
 
@@ -27,13 +29,14 @@ class ContactObserver
      */
     public function updated(Contact $contact): void
     {
-        // Проверяем изменение статуса
+        // Проверяем изменение статуса (created_at явно в UTC)
         if ($contact->isDirty('status')) {
             ContactStatusHistory::create([
                 'contact_id' => $contact->id,
                 'user_id' => auth()->id(),
                 'old_status' => $contact->getOriginal('status'),
                 'new_status' => $contact->status->value,
+                'created_at' => Carbon::now('UTC'),
             ]);
         }
 
