@@ -187,7 +187,7 @@ class ContactResource extends Resource
                     ->preload(),
 
                 Tables\Filters\Filter::make('my_contacts')
-                    ->label('Мои контакты')
+                    ->label('Мои контакты в работе')
                     ->query(fn (Builder $query): Builder => $query
                         ->where('assigned_leader_id', auth()->id())
                         ->whereNotIn('status', [ContactStatus::SUCCESS->value, ContactStatus::FAILED->value])
@@ -209,7 +209,7 @@ class ContactResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->modifyQueryUsing(function (Builder $query) use ($isLeader) {
                 // Для лидеров по умолчанию показываем только их контакты без финальных статусов
-                // Это поведение можно отключить фильтром "Мои контакты"
+                // Это поведение можно отключить фильтром "Мои контакты в работе"
                 return $query;
             });
     }

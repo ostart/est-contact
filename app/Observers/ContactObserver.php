@@ -33,7 +33,7 @@ class ContactObserver
         if ($contact->isDirty('status')) {
             ContactStatusHistory::create([
                 'contact_id' => $contact->id,
-                'user_id' => auth()->id(),
+                'user_id' => auth()->id(), // null при смене статуса из консоли (например, contacts:check-overdue)
                 'old_status' => $contact->getOriginal('status'),
                 'new_status' => $contact->status->value,
                 'created_at' => Carbon::now('UTC'),
