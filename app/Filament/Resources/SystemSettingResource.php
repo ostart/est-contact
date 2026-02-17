@@ -26,7 +26,9 @@ class SystemSettingResource extends Resource
 
     protected static ?string $pluralModelLabel = 'настройки';
 
-    protected static ?int $navigationSort = 4;
+    protected static string | \UnitEnum | null $navigationGroup = 'Настройки';
+
+    protected static ?int $navigationSort = 5;
 
     public static function shouldRegisterNavigation(): bool
     {
@@ -62,6 +64,13 @@ class SystemSettingResource extends Resource
 
                                 return match ($record->key) {
                                     'contact_processing_timeout_days' => 'Таймаут обработки контакта в днях. По умолчанию: 30 дней.',
+                                    'mail_host' => 'SMTP-хост (например smtp.timeweb.ru). Документация Timeweb: https://timeweb.com/ru/docs/pochta/',
+                                    'mail_port' => 'Порт SMTP: 465 (SSL), 25 или 2525 (STARTTLS).',
+                                    'mail_encryption' => 'Шифрование: ssl, tls или пусто.',
+                                    'mail_username' => 'Логин (полный адрес почтового ящика).',
+                                    'mail_password' => 'Пароль от почтового ящика.',
+                                    'mail_from_address' => 'Email отправителя уведомлений.',
+                                    'mail_from_name' => 'Имя отправителя в письмах.',
                                     default => 'Нет описания для этой настройки',
                                 };
                             })

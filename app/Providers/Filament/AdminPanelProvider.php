@@ -28,6 +28,8 @@ class AdminPanelProvider extends PanelProvider
             ->login(\App\Filament\Pages\Auth\Login::class)
             ->registration(\App\Filament\Pages\Auth\Register::class)
             ->emailVerification()
+            ->passwordReset()
+            ->profile(\App\Filament\Pages\EditProfile::class)
             ->colors([
                 'primary' => Color::Blue,
             ])

@@ -56,18 +56,20 @@ class ViewManagement extends ViewRecord
                         Components\RepeatableEntry::make('statusHistories')
                             ->label('')
                             ->schema([
+                                Components\TextEntry::make('contact.full_name')
+                                    ->label('Контакт'),
                                 Components\TextEntry::make('old_status')
                                     ->label('Старый статус')
                                     ->default('—'),
                                 Components\TextEntry::make('new_status')
                                     ->label('Новый статус'),
                                 Components\TextEntry::make('user.name')
-                                    ->label('Пользователь'),
+                                    ->label("Пользо-\nватель"),
                                 Components\TextEntry::make('created_at')
                                     ->label('Дата')
                                     ->formatStateUsing(fn ($state) => format_datetime_moscow($state)),
                             ])
-                            ->columns(4),
+                            ->columns(5),
                     ])->collapsible(),
 
                 SchemaComponents\Section::make('Комментарии')

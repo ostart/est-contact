@@ -27,13 +27,15 @@ class ContactsStatsWidget extends BaseWidget
     {
         $total = Contact::count();
         $awaiting = Contact::where('status', ContactStatus::NOT_PROCESSED)->count();
-        $inProgress = Contact::whereIn('status', [ContactStatus::ASSIGNED, ContactStatus::OVERDUE])->count();
+        $inProgress = Contact::where('status', ContactStatus::ASSIGNED)->count();
+        $overdue = Contact::where('status', ContactStatus::OVERDUE)->count();
         $success = Contact::where('status', ContactStatus::SUCCESS)->count();
         $failed = Contact::where('status', ContactStatus::FAILED)->count();
         $newThisWeek = Contact::where('created_at', '>=', now()->subWeek())->count();
         
         $successRate = $total > 0 ? round(($success / $total) * 100, 1) : 0;
         $inProgressRate = $total > 0 ? round(($inProgress / $total) * 100, 1) : 0;
+        $overdueRate = $total > 0 ? round(($overdue / $total) * 100, 1) : 0;
 
         // График динамики создания контактов за последние 5 дней
         $chartData = [];
@@ -61,6 +63,12 @@ class ContactsStatsWidget extends BaseWidget
                 ->descriptionIcon('heroicon-m-arrow-path')
                 ->color('info')
                 ->icon('heroicon-o-cog-6-tooth'),
+
+            Stat::make('Просрочено', number_format($overdue, 0, ',', ' '))
+                ->description($overdueRate . '%')
+                ->descriptionIcon('heroicon-m-exclamation-triangle')
+                ->color('warning')
+                ->icon('heroicon-o-clock'),
 
             Stat::make('Успешно', number_format($success, 0, ',', ' '))
                 ->description($successRate . '% успешных')
