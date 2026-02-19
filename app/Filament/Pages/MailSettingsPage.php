@@ -10,6 +10,7 @@ use Filament\Pages\Page;
 use Filament\Panel;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Form;
@@ -67,6 +68,7 @@ class MailSettingsPage extends Page
     protected function fillForm(): void
     {
         $data = [
+            'mail_notifications_enabled' => (bool) filter_var(SystemSetting::get('mail_notifications_enabled', '0'), FILTER_VALIDATE_BOOLEAN),
             'mail_host' => SystemSetting::get('mail_host', ''),
             'mail_port' => SystemSetting::get('mail_port', '465'),
             'mail_encryption' => SystemSetting::get('mail_encryption', 'ssl'),
@@ -90,6 +92,10 @@ class MailSettingsPage extends Page
                 $value = Arr::get($data, $key);
                 if ($key === 'mail_password' && blank($value)) {
                     continue; // не перезаписываем пароль пустым
+                }
+                if ($key === 'mail_notifications_enabled') {
+                    SystemSetting::set($key, $value ? '1' : '0');
+                    continue;
                 }
                 SystemSetting::set($key, (string) $value);
             }
@@ -115,6 +121,7 @@ class MailSettingsPage extends Page
     private function mailKeys(): array
     {
         return [
+            'mail_notifications_enabled',
             'mail_host',
             'mail_port',
             'mail_encryption',
@@ -134,6 +141,15 @@ class MailSettingsPage extends Page
     {
         return $schema
             ->components([
+                Section::make('Рассылка')
+                    ->description('Включите отправку email-уведомлений лидерам при назначении контакта на обработку.')
+                    ->schema([
+                        Toggle::make('mail_notifications_enabled')
+                            ->label('Включить рассылку уведомлений по email')
+                            ->default(false)
+                            ->inline(false),
+                    ]),
+
                 Section::make('SMTP-сервер')
                     ->description('Используется для отправки уведомлений лидерам при назначении контакта. Для Timeweb: smtp.timeweb.ru, порт 465 (SSL) или 25/2525 (STARTTLS).')
                     ->schema([

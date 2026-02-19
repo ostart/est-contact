@@ -64,6 +64,7 @@ class SystemSettingResource extends Resource
 
                                 return match ($record->key) {
                                     'contact_processing_timeout_days' => 'Таймаут обработки контакта в днях. По умолчанию: 30 дней.',
+                                    'mail_notifications_enabled' => 'Включить рассылку email при назначении контакта лидеру (1 — да, 0 — нет).',
                                     'mail_host' => 'SMTP-хост (например smtp.timeweb.ru). Документация Timeweb: https://timeweb.com/ru/docs/pochta/',
                                     'mail_port' => 'Порт SMTP: 465 (SSL), 25 или 2525 (STARTTLS).',
                                     'mail_encryption' => 'Шифрование: ssl, tls или пусто.',

@@ -133,6 +133,12 @@ class ManagementResource extends Resource
                             ->searchable()
                             ->preload()
                             ->live()
+                            ->requiredUnless('status', ContactStatus::NOT_PROCESSED->value)
+                            ->prohibitedIf('status', ContactStatus::NOT_PROCESSED->value)
+                            ->validationMessages([
+                                'required_unless' => 'При статусе отличном от «Не обработан» необходимо указать ответственного лидера.',
+                                'prohibited_if' => 'При статусе «Не обработан» ответственный лидер должен быть не выбран.',
+                            ])
                             ->afterStateUpdated(function (?string $state, Set $set) {
                                 if (filled($state)) {
                                     $set('status', ContactStatus::ASSIGNED->value);

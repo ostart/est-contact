@@ -15,6 +15,7 @@ class SystemSettingSeeder extends Seeder
         $settings = [
             ['key' => 'contact_processing_timeout_days', 'value' => '30'],
             // Почтовый сервер (для уведомлений при назначении контакта). Документация Timeweb: https://timeweb.com/ru/docs/pochta/
+            ['key' => 'mail_notifications_enabled', 'value' => '0'],
             ['key' => 'mail_host', 'value' => ''],
             ['key' => 'mail_port', 'value' => '465'],
             ['key' => 'mail_encryption', 'value' => 'ssl'],

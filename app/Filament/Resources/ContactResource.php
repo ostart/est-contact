@@ -12,6 +12,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components as SchemaComponents;
 use Filament\Schemas\Schema;
 use Filament\Tables;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Tables\Columns;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -82,6 +83,12 @@ class ContactResource extends Resource
                             ->required()
                             ->default(ContactStatus::NOT_PROCESSED->value)
                             ->disabled(fn ($record) => $record && (($record->status instanceof ContactStatus ? $record->status : ContactStatus::from($record->status))->isFinal()))
+                            ->live()
+                            ->afterStateUpdated(function (?string $state, Set $set) {
+                                if ($state === ContactStatus::NOT_PROCESSED->value) {
+                                    $set('assigned_leader_id', null);
+                                }
+                            })
                             ->visible(fn () => auth()->user()->hasAnyRole(['manager', 'administrator', 'superadmin'])),
 
                         Components\Select::make('assigned_leader_id')
@@ -93,6 +100,12 @@ class ContactResource extends Resource
                             )
                             ->searchable()
                             ->preload()
+                            ->requiredUnless('status', ContactStatus::NOT_PROCESSED->value)
+                            ->prohibitedIf('status', ContactStatus::NOT_PROCESSED->value)
+                            ->validationMessages([
+                                'required_unless' => 'При статусе отличном от «Не обработан» необходимо указать ответственного лидера.',
+                                'prohibited_if' => 'При статусе «Не обработан» ответственный лидер должен быть не выбран.',
+                            ])
                             ->visible(fn () => auth()->user()->hasAnyRole(['manager', 'administrator', 'superadmin'])),
                     ])->columns(2),
 
