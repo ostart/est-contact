@@ -24,6 +24,13 @@ class EditManagement extends EditRecord
         if (isset($data['status']) && $data['status'] === ContactStatus::NOT_PROCESSED->value) {
             $data['assigned_leader_id'] = null;
         }
+        // Если ответственный лидер снят - переключаем статус на "Не обработан" (кроме финальных статусов)
+        $recordStatus = $this->record->status instanceof ContactStatus
+            ? $this->record->status
+            : ContactStatus::tryFrom($this->record->status ?? '');
+        if (empty($data['assigned_leader_id']) && $recordStatus && ! $recordStatus->isFinal()) {
+            $data['status'] = ContactStatus::NOT_PROCESSED->value;
+        }
 
         return $data;
     }

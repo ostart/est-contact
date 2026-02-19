@@ -142,6 +142,8 @@ class ManagementResource extends Resource
                             ->afterStateUpdated(function (?string $state, Set $set) {
                                 if (filled($state)) {
                                     $set('status', ContactStatus::ASSIGNED->value);
+                                } else {
+                                    $set('status', ContactStatus::NOT_PROCESSED->value);
                                 }
                             }),
                     ])->columns(2),
