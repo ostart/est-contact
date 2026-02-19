@@ -122,7 +122,14 @@ class ManagementResource extends Resource
 
                         Components\Select::make('assigned_leader_id')
                             ->label('Ответственный лидер')
-                            ->relationship('assignedLeader', 'name', fn (Builder $query) => $query->whereHas('roles', fn ($q) => $q->where('name', 'leader')))
+                            ->relationship(
+                                'assignedLeader',
+                                'name',
+                                fn (Builder $query) => $query
+                                    ->whereNotNull('email_verified_at')
+                                    ->where('is_approved', true)
+                                    ->whereHas('roles', fn ($q) => $q->where('name', 'leader'))
+                            )
                             ->searchable()
                             ->preload()
                             ->live()

@@ -86,7 +86,11 @@ class ContactResource extends Resource
 
                         Components\Select::make('assigned_leader_id')
                             ->label('Ответственный лидер')
-                            ->relationship('assignedLeader', 'name')
+                            ->relationship(
+                                'assignedLeader',
+                                'name',
+                                fn (Builder $query) => $query->whereNotNull('email_verified_at')->where('is_approved', true)
+                            )
                             ->searchable()
                             ->preload()
                             ->visible(fn () => auth()->user()->hasAnyRole(['manager', 'administrator', 'superadmin'])),
