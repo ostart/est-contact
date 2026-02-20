@@ -84,7 +84,7 @@ php artisan db:seed --force
 
 - `--force` нужен, т.к. в production Laravel спрашивает подтверждение.
 - Перед сидером при необходимости поправьте в `.env` переменные `SEED_ADMIN_*` (админ при первом заполнении БД).
-- Настройки почты в БД (таблица `system_settings`) при сидинге заполняются из переменных **MAIL_*** в `.env` (MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, MAIL_ENCRYPTION, MAIL_FROM_ADDRESS, MAIL_FROM_NAME). Задайте их до запуска `db:seed`, чтобы не настраивать почту вручную в админке. Опционально: `SEED_MAIL_NOTIFICATIONS_ENABLED=1` — включить рассылку уведомлений при первом сидинге.
+- Настройки почты в БД (таблица `system_settings`) при сидинге заполняются из **MAIL_*** в `.env`. Задайте их до запуска `db:seed`. Если после сидинга почта в БД пустая — выполните **перед** сидингом `php artisan config:clear` (чтобы Laravel заново прочитал `.env`), затем снова `php artisan db:seed --force`. Опционально: `SEED_MAIL_NOTIFICATIONS_ENABLED=1` — включить рассылку при первом сидинге.
 
 ### 2.4 Бэкап и перенос БД (скрипты в репозитории)
 
