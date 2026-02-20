@@ -12,10 +12,14 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
+        $name = config('seeding.admin_name');
+        $email = config('seeding.admin_email');
+        $password = config('seeding.admin_password');
+
         $admin = \App\Models\User::create([
-            'name' => 'Admin',
-            'email' => 'admin@example.com',
-            'password' => bcrypt('password'),
+            'name' => $name,
+            'email' => $email,
+            'password' => bcrypt($password),
             'email_verified_at' => now(),
             'is_approved' => true,
             'has_dashboard_access' => true,
@@ -25,7 +29,6 @@ class AdminUserSeeder extends Seeder
         $admin->assignRole(['leader', 'manager', 'administrator', 'superadmin']);
 
         $this->command->info('Admin user created successfully!');
-        $this->command->info('Email: admin@example.com');
-        $this->command->info('Password: password');
+        $this->command->info('Email: ' . $email);
     }
 }
