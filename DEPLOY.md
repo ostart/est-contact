@@ -37,11 +37,10 @@ php artisan key:generate --show
 
 ### 1.4 Корень сайта на хостинге
 
-В настройках домена/хоста **Document Root** должен указывать на папку **`public`** проекта, например:
+В настройках домена/хоста **Document Root** должен указывать на папку **`public`** проекта:
 
-- `public_html` → заменить на путь к папке `public` вашего проекта,  
-  **или**
-- Создать симлинк: папка домена → `.../ваш-проект/public`.
+- `public_html` → удалить
+- Создать симлинк через SSH-консоль: ln -s ~/est-contact/public ~/est-contact/public_html
 
 Иначе Laravel не найдёт `index.php` и возможны ошибки 403/404.
 
@@ -86,7 +85,7 @@ php artisan db:seed --force
 - Перед сидером при необходимости поправьте в `.env` переменные `SEED_ADMIN_*` (админ при первом заполнении БД).
 - Настройки почты в БД (таблица `system_settings`) при сидинге заполняются из **MAIL_*** в `.env`. Задайте их до запуска `db:seed`. Если после сидинга почта в БД пустая — выполните **перед** сидингом `php artisan config:clear` (чтобы Laravel заново прочитал `.env`), затем снова `php artisan db:seed --force`. Опционально: `SEED_MAIL_NOTIFICATIONS_ENABLED=1` — включить рассылку при первом сидинге.
 
-### 2.4 Бэкап и перенос БД (скрипты в репозитории)
+### 2.4 Альтернатива: Бэкап и перенос БД (скрипты в репозитории на случай проблем или отсутствия artisan)
 
 - **Экспорт локальной БД** (резервная копия или перенос):
   - Linux / Git Bash: `./scripts/export-db.sh` или `./scripts/export-db.sh mydump.sql`
@@ -150,30 +149,17 @@ php artisan config:cache
    ```
 
 3. **Очередь и планировщик (если используете):**
-   - В проекте есть команда `contacts:check-overdue`. Для её запуска по расписанию на TimeWeb добавьте задание cron. Варианты записи:
-   
-   **Вариант 1 — перенос строки через обратный слэш:**
-   ```bash
-   * * * * * cd /путь/к/проекту && \
-   php artisan schedule:run >> /dev/null 2>&1
-   ```
-   
-   **Вариант 2 — полный путь к PHP и artisan (без cd):**
-   ```bash
-   * * * * * /usr/bin/php /путь/к/проекту/artisan schedule:run >> /dev/null 2>&1
-   ```
-   Узнать путь к PHP: `which php` или `whereis php`.
+   - В проекте есть команда `contacts:check-overdue`. Для её запуска по расписанию на TimeWeb добавьте задание cron, через админку TimeWeb. Варианты записи:
    
    **Вариант 3 — через скрипт (рекомендуется):**
    Используйте готовый скрипт `scripts/cron-schedule.sh` из репозитория:
    ```bash
    # На сервере сделать исполняемым:
-   chmod +x /путь/к/проекту/scripts/cron-schedule.sh
+   chmod +x ./scripts/cron-schedule.sh
    
    # В cron записать:
-   * * * * * /путь/к/проекту/scripts/cron-schedule.sh
+   * * * * * /home/o/ostart/est-contact/scripts/cron-schedule.sh
    ```
-   Преимущества: проще редактировать, короче команда в cron, автоматически определяет путь к проекту.
    
    - В `app/Console/Kernel.php` (или в `routes/console.php` в Laravel 11) должно быть запланировано выполнение `contacts:check-overdue`.
 
@@ -183,7 +169,7 @@ php artisan config:cache
 
 ---
 
-## 5. TimeWeb Cloud / App Platform
+## 5. TimeWeb Cloud / App Platform (Опционально, пока не использую)
 
 Если используете **TimeWeb Cloud** и деплой из Git:
 
