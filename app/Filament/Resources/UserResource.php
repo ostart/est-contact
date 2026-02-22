@@ -166,11 +166,13 @@ class UserResource extends Resource
                     ->tooltip('Изменить'),
                 Actions\DeleteAction::make()
                     ->iconButton()
-                    ->tooltip('Удалить'),
+                    ->tooltip('Удалить')
+                    ->successRedirectUrl(UserResource::getUrl('index')),
             ])
             ->toolbarActions([
                 Actions\BulkActionGroup::make([
-                    Actions\DeleteBulkAction::make(),
+                    Actions\DeleteBulkAction::make()
+                        ->successRedirectUrl(UserResource::getUrl('index')),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

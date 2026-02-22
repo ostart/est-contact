@@ -41,10 +41,15 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Применяет настройки почты из раздела «Настройки» (суперадмин).
      * Документация Timeweb: https://timeweb.com/ru/docs/pochta/
+     * Локально при MAIL_MAILER=log не переключаем на SMTP из БД — письма идут в лог.
      */
     private function applyMailConfigFromSettings(): void
     {
         try {
+            if (config('mail.default') !== 'smtp') {
+                return;
+            }
+
             $host = SystemSetting::get('mail_host');
             if (blank($host)) {
                 return;

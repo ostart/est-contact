@@ -166,7 +166,7 @@ class MailSettingsPage extends Page
                             ->label('Шифрование')
                             ->options([
                                 'ssl' => 'SSL (порт 465)',
-                                'tls' => 'TLS / STARTTLS (порт 25, 2525, 587)',
+                                'tls' => 'TLS / STARTTLS (порт 25, 2525)',
                                 '' => 'Без шифрования',
                             ]),
                         TextInput::make('mail_username')

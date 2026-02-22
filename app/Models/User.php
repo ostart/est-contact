@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Filament\Auth\Notifications\VerifyEmail as FilamentVerifyEmail;
+use App\Notifications\VerifyEmail as AppVerifyEmail;
 use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -66,12 +66,12 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     }
 
     /**
-     * Отправка письма верификации по ссылке Filament (маршрут filament.admin.auth.email-verification.verify),
-     * а не Laravel verification.verify, который в приложении не зарегистрирован.
+     * Отправка письма верификации по ссылке Filament (маршрут filament.admin.auth.email-verification.verify).
+     * Используется своё уведомление без очереди — письмо уходит сразу и при MAIL_MAILER=log попадает в лог.
      */
     public function sendEmailVerificationNotification(): void
     {
-        $notification = app(FilamentVerifyEmail::class);
+        $notification = app(AppVerifyEmail::class);
         $notification->url = Filament::getVerifyEmailUrl($this);
         $this->notify($notification);
     }
