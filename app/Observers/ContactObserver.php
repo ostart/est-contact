@@ -40,8 +40,8 @@ class ContactObserver
             ]);
         }
 
-        // Проверяем назначение лидера
-        if ($contact->isDirty('assigned_leader_id') && $contact->assigned_leader_id) {
+        // Проверяем назначение лидера (wasChanged — после save; isDirty в updated уже сброшен)
+        if ($contact->wasChanged('assigned_leader_id') && $contact->assigned_leader_id) {
             $leader = $contact->assignedLeader;
             if ($leader) {
                 $leader->notify(new ContactAssignedNotification($contact));

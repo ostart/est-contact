@@ -24,6 +24,9 @@ class Register extends BaseRegister
         $user = User::create($data);
         $user->assignRole('leader');
 
+        // Письмо подтверждения email — отправитель из .env (MAIL_*) или из настроек (Настройки → почтовый сервер)
+        $user->sendEmailVerificationNotification();
+
         return $user;
     }
 
