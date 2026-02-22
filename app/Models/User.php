@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Notifications\VerifyEmail as AppVerifyEmail;
-use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
+use Illuminate\Support\Facades\URL;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -66,13 +66,17 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     }
 
     /**
-     * Отправка письма верификации по ссылке Filament (маршрут filament.admin.auth.email-verification.verify).
-     * Используется своё уведомление без очереди — письмо уходит сразу и при MAIL_MAILER=log попадает в лог.
+     * Отправка письма верификации по подписанной ссылке (без обязательного входа).
+     * Маршрут app.email.verify обрабатывает переход из письма и проставляет email_verified_at в БД.
      */
     public function sendEmailVerificationNotification(): void
     {
         $notification = app(AppVerifyEmail::class);
-        $notification->url = Filament::getVerifyEmailUrl($this);
+        $notification->url = URL::temporarySignedRoute(
+            'app.email.verify',
+            now()->addMinutes(config('auth.verification.expire', 60)),
+            ['id' => $this->getKey(), 'hash' => sha1($this->getEmailForVerification())]
+        );
         $this->notify($notification);
     }
 
