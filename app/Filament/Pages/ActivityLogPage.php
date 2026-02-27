@@ -1,27 +1,45 @@
 <?php
 
-namespace App\Filament\Widgets;
+namespace App\Filament\Pages;
 
-use Filament\Widgets\TableWidget as BaseWidget;
-use Filament\Tables\Table;
+use Filament\Pages\Page;
+use Filament\Panel;
 use Filament\Tables\Columns\TextColumn;
-use Spatie\Activitylog\Models\Activity;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Spatie\Activitylog\Models\Activity;
 
-class ActivityLogTableWidget extends BaseWidget
+class ActivityLogPage extends Page implements HasTable
 {
-    protected static ?int $sort = 3;
+    use InteractsWithTable;
 
-    protected int | string | array $columnSpan = 'full';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
-    public function getHeading(): string
+    protected static ?string $navigationLabel = 'Журнал аудита';
+
+    protected static ?string $title = 'Журнал аудита';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Настройки';
+
+    protected static ?int $navigationSort = 2;
+
+    protected string $view = 'filament.pages.activity-log';
+
+    public static function getSlug(?Panel $panel = null): string
     {
-        return 'Журнал аудита';
+        return 'settings/activity-log';
     }
 
-    public function getDescription(): ?string
+    public static function canAccess(): bool
     {
-        return 'История всех действий в системе';
+        return auth()->check() && auth()->user()->hasRole('superadmin');
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
     }
 
     public function table(Table $table): Table
@@ -111,18 +129,16 @@ class ActivityLogTableWidget extends BaseWidget
                         if (!$state || empty($state)) {
                             return '—';
                         }
-                        
-                        // Если это массив или объект, форматируем в читаемый вид
+
                         if (is_array($state) || is_object($state)) {
                             $data = is_object($state) ? (array) $state : $state;
-                            
-                            // Форматируем изменения (attributes/old) для событий updated
+
                             $result = [];
                             if (isset($data['attributes']) && is_array($data['attributes'])) {
                                 $changes = [];
                                 foreach ($data['attributes'] as $key => $value) {
-                                    $displayValue = is_array($value) || is_object($value) 
-                                        ? json_encode($value, JSON_UNESCAPED_UNICODE) 
+                                    $displayValue = is_array($value) || is_object($value)
+                                        ? json_encode($value, JSON_UNESCAPED_UNICODE)
                                         : (string) $value;
                                     $changes[] = "{$key}: {$displayValue}";
                                 }
@@ -130,12 +146,12 @@ class ActivityLogTableWidget extends BaseWidget
                                     $result[] = 'Новые: ' . implode(', ', $changes);
                                 }
                             }
-                            
+
                             if (isset($data['old']) && is_array($data['old'])) {
                                 $oldChanges = [];
                                 foreach ($data['old'] as $key => $value) {
-                                    $displayValue = is_array($value) || is_object($value) 
-                                        ? json_encode($value, JSON_UNESCAPED_UNICODE) 
+                                    $displayValue = is_array($value) || is_object($value)
+                                        ? json_encode($value, JSON_UNESCAPED_UNICODE)
                                         : (string) $value;
                                     $oldChanges[] = "{$key}: {$displayValue}";
                                 }
@@ -143,22 +159,21 @@ class ActivityLogTableWidget extends BaseWidget
                                     $result[] = 'Старые: ' . implode(', ', $oldChanges);
                                 }
                             }
-                            
+
                             if (empty($result)) {
-                                // Если нет стандартной структуры, показываем все данные компактно
                                 $formatted = [];
                                 foreach ($data as $key => $value) {
-                                    $displayValue = is_array($value) || is_object($value) 
-                                        ? json_encode($value, JSON_UNESCAPED_UNICODE) 
+                                    $displayValue = is_array($value) || is_object($value)
+                                        ? json_encode($value, JSON_UNESCAPED_UNICODE)
                                         : (string) $value;
                                     $formatted[] = "{$key}: {$displayValue}";
                                 }
                                 return implode(', ', $formatted);
                             }
-                            
+
                             return implode(' | ', $result);
                         }
-                        
+
                         return is_string($state) ? $state : json_encode($state, JSON_UNESCAPED_UNICODE);
                     })
                     ->wrap()
@@ -177,8 +192,8 @@ class ActivityLogTableWidget extends BaseWidget
                     ->description(fn ($record) => format_datetime_moscow($record->created_at)),
             ])
             ->defaultSort('created_at', 'desc')
-            ->paginated([10, 25, 50])
-            ->defaultPaginationPageOption(10)
+            ->paginated([10, 25, 50, 100])
+            ->defaultPaginationPageOption(25)
             ->poll('30s')
             ->emptyStateHeading('Нет записей')
             ->emptyStateDescription('Журнал аудита пуст');
