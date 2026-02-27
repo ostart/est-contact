@@ -47,6 +47,22 @@ class ApprovalController extends Controller
     }
 
     /**
+     * Показать страницу бана
+     */
+    public function banned()
+    {
+        $user = auth()->user();
+
+        if ($user && !$user->is_banned) {
+            return redirect('/admin');
+        }
+
+        return view('approval.banned', [
+            'reason' => $user?->ban_reason,
+        ]);
+    }
+
+    /**
      * Выйти из системы
      */
     public function logout(Request $request)

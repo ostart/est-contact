@@ -14,13 +14,18 @@ class EnsureUserIsApproved
     public function handle(Request $request, Closure $next): Response
     {
         // Пропускаем страницы, которые не требуют подтверждения
-        if ($request->is('approval/*') || $request->is('admin/logout') || $request->is('email/*')) {
+        if ($request->is('approval/*') || $request->is('admin/logout') || $request->is('email/*') || $request->is('banned')) {
             return $next($request);
         }
 
         $user = auth()->user();
 
         if (auth()->check() && $user) {
+            // Проверяем бан пользователя
+            if ($user->is_banned) {
+                return redirect()->route('user.banned');
+            }
+
             // Проверяем подтверждение email (если email указан)
             if (filled($user->email) && !$user->hasVerifiedEmail()) {
                 return redirect()->route('email.verification.notice');

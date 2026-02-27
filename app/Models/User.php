@@ -30,6 +30,9 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         'password',
         'is_approved',
         'has_dashboard_access',
+        'is_banned',
+        'ban_reason',
+        'banned_at',
     ];
 
     /**
@@ -54,13 +57,15 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             'password' => 'hashed',
             'is_approved' => 'boolean',
             'has_dashboard_access' => 'boolean',
+            'is_banned' => 'boolean',
+            'banned_at' => 'datetime',
         ];
     }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'email', 'is_approved', 'has_dashboard_access'])
+            ->logOnly(['name', 'email', 'is_approved', 'has_dashboard_access', 'is_banned'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }

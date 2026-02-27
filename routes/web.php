@@ -22,4 +22,7 @@ Route::middleware(['auth'])->group(function () {
     // Страница верификации email
     Route::get('/email/verify', [ApprovalController::class, 'emailVerificationNotice'])->name('email.verification.notice');
     Route::post('/email/resend', [ApprovalController::class, 'resendVerification'])->name('email.resend');
+
+    // Страница бана
+    Route::get('/banned', [ApprovalController::class, 'banned'])->name('user.banned');
 });
