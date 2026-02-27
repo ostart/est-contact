@@ -82,11 +82,9 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 
     public function canAccessPanel(Panel $panel): bool
     {
-        // Неподтверждённые пользователи могут пройти логин — редирект на pending сделает middleware
-        if (! $this->is_approved) {
-            return true;
-        }
-        return $this->hasVerifiedEmail();
+        // Разрешаем вход всем пользователям — редирект на нужную страницу сделает middleware
+        // (pending для неподтверждённых админом, email-verification для неверифицированного email)
+        return true;
     }
 
     public function createdContacts(): HasMany

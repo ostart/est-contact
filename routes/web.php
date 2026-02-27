@@ -14,8 +14,12 @@ Route::get('/admin/verify-email/{id}/{hash}', VerifyEmailController::class)
     ->middleware(['signed', 'throttle:6,1'])
     ->name('app.email.verify');
 
-// Страница ожидания подтверждения
+// Страницы ожидания подтверждения
 Route::middleware(['auth'])->group(function () {
     Route::get('/approval/pending', [ApprovalController::class, 'pending'])->name('approval.pending');
     Route::post('/approval/logout', [ApprovalController::class, 'logout'])->name('approval.logout');
+
+    // Страница верификации email
+    Route::get('/email/verify', [ApprovalController::class, 'emailVerificationNotice'])->name('email.verification.notice');
+    Route::post('/email/resend', [ApprovalController::class, 'resendVerification'])->name('email.resend');
 });

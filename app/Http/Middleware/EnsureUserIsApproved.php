@@ -14,13 +14,22 @@ class EnsureUserIsApproved
     public function handle(Request $request, Closure $next): Response
     {
         // Пропускаем страницы, которые не требуют подтверждения
-        if ($request->is('approval/*') || $request->is('admin/logout')) {
+        if ($request->is('approval/*') || $request->is('admin/logout') || $request->is('email/*')) {
             return $next($request);
         }
 
-        if (auth()->check() && !auth()->user()->is_approved) {
-            // Если пользователь авторизован, но не подтвержден - перенаправляем на страницу ожидания
-            return redirect()->route('approval.pending');
+        $user = auth()->user();
+
+        if (auth()->check() && $user) {
+            // Проверяем подтверждение email (если email указан)
+            if (filled($user->email) && !$user->hasVerifiedEmail()) {
+                return redirect()->route('email.verification.notice');
+            }
+
+            // Проверяем подтверждение администратором
+            if (!$user->is_approved) {
+                return redirect()->route('approval.pending');
+            }
         }
 
         return $next($request);

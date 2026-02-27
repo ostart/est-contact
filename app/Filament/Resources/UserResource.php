@@ -88,8 +88,10 @@ class UserResource extends Resource
                             ->afterStateHydrated(fn ($component, $record) => $component->state($record?->email_verified_at !== null))
                             ->dehydrated(false)
                             ->live()
+                            ->disabled(fn ($record) => blank($record?->email))
+                            ->helperText(fn ($record) => blank($record?->email) ? 'Укажите email для подтверждения' : null)
                             ->afterStateUpdated(function ($state, $record) {
-                                if ($record) {
+                                if ($record && filled($record->email)) {
                                     $record->email_verified_at = $state ? now() : null;
                                     $record->save();
                                 }
@@ -134,6 +136,7 @@ class UserResource extends Resource
 
                 Columns\IconColumn::make('email_verified_at')
                     ->label('Email')
+                    ->getStateUsing(fn ($record) => $record->email_verified_at !== null)
                     ->boolean()
                     ->sortable(),
 
