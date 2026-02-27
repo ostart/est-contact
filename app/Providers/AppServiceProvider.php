@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Http\Responses\LoginResponse;
 use App\Models\SystemSetting;
+use Filament\Auth\Http\Responses\Contracts\LoginResponse as LoginResponseContract;
 use Filament\Support\Facades\FilamentTimezone;
 use Illuminate\Support\ServiceProvider;
 
@@ -13,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(LoginResponseContract::class, LoginResponse::class);
     }
 
     /**

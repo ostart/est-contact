@@ -13,10 +13,24 @@ class EditProfile extends BaseEditProfile
 {
     protected function getRedirectUrl(): ?string
     {
-        // После сохранения переходим в раздел «Контакты» (для лидеров) или на дашборд
-        if (auth()->user()->hasRole('leader')) {
+        $user = auth()->user();
+
+        if ($user->has_dashboard_access) {
+            return Filament::getUrl();
+        }
+
+        if ($user->hasRole('leader')) {
             return ContactResource::getUrl('index');
         }
+
+        if ($user->hasRole('manager')) {
+            return \App\Filament\Resources\ManagementResource::getUrl('index');
+        }
+
+        if ($user->hasRole('superadmin')) {
+            return \App\Filament\Resources\UserResource::getUrl('index');
+        }
+
         return Filament::getUrl();
     }
 
