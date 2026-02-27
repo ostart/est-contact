@@ -58,6 +58,7 @@ class ActivityLogPage extends Page implements HasTable
                             \App\Models\Contact::class => $subject->full_name ?? "#{$record->subject_id}",
                             \App\Models\User::class => $subject->name ?? $subject->email ?? "#{$record->subject_id}",
                             \App\Models\SystemSetting::class => $subject->key ?? "#{$record->subject_id}",
+                            \App\Models\UserWarning::class => $subject->user?->name ?? "Пользователь #{$subject->user_id}",
                             default => $subject->name ?? $subject->full_name ?? $subject->key ?? "#{$record->subject_id}",
                         };
                     })
@@ -91,6 +92,7 @@ class ActivityLogPage extends Page implements HasTable
                             'App\Models\Contact' => 'Контакт',
                             'App\Models\User' => 'Пользователь',
                             'App\Models\SystemSetting' => 'Настройка',
+                            'App\Models\UserWarning' => 'Предупреждение',
                             default => class_basename($state),
                         };
                     })
@@ -99,6 +101,7 @@ class ActivityLogPage extends Page implements HasTable
                         'App\Models\Contact' => 'primary',
                         'App\Models\User' => 'success',
                         'App\Models\SystemSetting' => 'warning',
+                        'App\Models\UserWarning' => 'danger',
                         default => 'gray',
                     }),
 

@@ -3,6 +3,8 @@
 namespace App\Notifications;
 
 use App\Models\SystemSetting;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -40,14 +42,19 @@ class UserWarningNotification extends Notification
     /**
      * @return array<string, mixed>
      */
-    public function toArray(object $notifiable): array
+    public function toDatabase(object $notifiable): array
     {
-        return [
-            'format' => 'filament',
-            'title' => 'Предупреждение от администратора',
-            'body' => $this->message,
-            'icon' => 'heroicon-o-exclamation-triangle',
-            'iconColor' => 'warning',
-        ];
+        return FilamentNotification::make()
+            ->warning()
+            ->title('Предупреждение от администратора')
+            ->body($this->message)
+            ->icon('heroicon-o-exclamation-triangle')
+            ->actions([
+                Action::make('mark_as_read')
+                    ->label('Прочитано')
+                    ->button()
+                    ->markAsRead(),
+            ])
+            ->getDatabaseMessage();
     }
 }

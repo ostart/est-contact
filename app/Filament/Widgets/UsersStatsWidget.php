@@ -27,6 +27,7 @@ class UsersStatsWidget extends BaseWidget
         $total = User::count();
         $active = User::where('is_approved', true)->count();
         $pending = User::where('is_approved', false)->count();
+        $banned = User::where('is_banned', true)->count();
         $newThisWeek = User::where('created_at', '>=', now()->subWeek())->count();
         
         $activeRate = $total > 0 ? round(($active / $total) * 100, 1) : 0;
@@ -57,6 +58,12 @@ class UsersStatsWidget extends BaseWidget
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('warning')
                 ->icon('heroicon-o-clock'),
+
+            Stat::make('Заблокировано', number_format($banned, 0, ',', ' '))
+                ->description($total > 0 ? round(($banned / $total) * 100, 1) . '%' : '0%')
+                ->descriptionIcon('heroicon-m-no-symbol')
+                ->color('danger')
+                ->icon('heroicon-o-no-symbol'),
 
             Stat::make('Новых за неделю', number_format($newThisWeek, 0, ',', ' '))
                 ->description('За 7 дней')

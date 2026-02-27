@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
+use App\Models\UserWarning;
 use App\Notifications\UserBannedNotification;
 use App\Notifications\UserUnbannedNotification;
 use App\Notifications\UserWarningNotification;
@@ -215,6 +216,12 @@ class UserResource extends Resource
                             ->placeholder('Введите текст предупреждения для пользователя...'),
                     ])
                     ->action(function (User $record, array $data) {
+                        UserWarning::create([
+                            'user_id' => $record->id,
+                            'warned_by' => auth()->id(),
+                            'message' => $data['message'],
+                        ]);
+
                         $record->notify(new UserWarningNotification($data['message']));
 
                         Notification::make()

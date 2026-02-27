@@ -5,6 +5,8 @@ namespace App\Notifications;
 use App\Filament\Resources\ContactResource;
 use App\Models\Contact;
 use App\Models\SystemSetting;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -14,7 +16,6 @@ use Illuminate\Notifications\Notification;
  */
 class ContactAssignedNotification extends Notification
 {
-
     /**
      * Create a new notification instance.
      */
@@ -56,12 +57,9 @@ class ContactAssignedNotification extends Notification
     }
 
     /**
-     * Get the array representation of the notification (для колокольчика в шапке Filament).
-     * Формат 'filament' обязателен, иначе уведомление не отобразится в списке.
-     *
      * @return array<string, mixed>
      */
-    public function toArray(object $notifiable): array
+    public function toDatabase(object $notifiable): array
     {
         $viewUrl = ContactResource::getUrl('view', ['record' => $this->contact]);
 
@@ -70,22 +68,22 @@ class ContactAssignedNotification extends Notification
             $body .= ' · ' . $this->contact->district;
         }
 
-        return [
-            'format' => 'filament',
-            'title' => 'Вам назначен новый контакт',
-            'body' => $body,
-            'contact_id' => $this->contact->id,
-            'contact_name' => $this->contact->full_name,
-            'contact_phone' => $this->contact->phone,
-            'actions' => [
-                [
-                    'name' => 'view_contact',
-                    'label' => 'Просмотреть контакт',
-                    'url' => $viewUrl,
-                    'shouldClose' => true,
-                ],
-            ],
-        ];
+        return FilamentNotification::make()
+            ->info()
+            ->title('Вам назначен новый контакт')
+            ->body($body)
+            ->icon('heroicon-o-user-plus')
+            ->actions([
+                Action::make('view_contact')
+                    ->label('Просмотреть')
+                    ->button()
+                    ->url($viewUrl),
+                Action::make('mark_as_read')
+                    ->label('Прочитано')
+                    ->button()
+                    ->markAsRead(),
+            ])
+            ->getDatabaseMessage();
     }
 }
 

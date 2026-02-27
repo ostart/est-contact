@@ -3,6 +3,8 @@
 namespace App\Notifications;
 
 use App\Models\SystemSetting;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -45,14 +47,19 @@ class UserBannedNotification extends Notification
     /**
      * @return array<string, mixed>
      */
-    public function toArray(object $notifiable): array
+    public function toDatabase(object $notifiable): array
     {
-        return [
-            'format' => 'filament',
-            'title' => 'Ваш аккаунт заблокирован',
-            'body' => $this->reason ?: 'Обратитесь к администратору за подробностями.',
-            'icon' => 'heroicon-o-no-symbol',
-            'iconColor' => 'danger',
-        ];
+        return FilamentNotification::make()
+            ->danger()
+            ->title('Ваш аккаунт заблокирован')
+            ->body($this->reason ?: 'Обратитесь к администратору за подробностями.')
+            ->icon('heroicon-o-no-symbol')
+            ->actions([
+                Action::make('mark_as_read')
+                    ->label('Прочитано')
+                    ->button()
+                    ->markAsRead(),
+            ])
+            ->getDatabaseMessage();
     }
 }
