@@ -151,20 +151,24 @@ class EditProfile extends BaseEditProfile
         return TextInput::make('phone')
             ->label('Телефон')
             ->tel()
-            ->maxLength(20);
+            ->maxLength(20)
+            ->columnSpan(['default' => 'full', 'md' => 1]);
     }
 
     protected function getAddressFormComponent(): Component
     {
-        return TextInput::make('address')
+        return Textarea::make('address')
             ->label('Адрес')
-            ->maxLength(255);
+            ->rows(3)
+            ->maxLength(255)
+            ->columnSpanFull();
     }
 
     protected function getBioFormComponent(): Component
     {
         return Textarea::make('bio')
             ->label('Дополнительная информация')
+            ->columnSpanFull()
             ->rows(3)
             ->maxLength(1000);
     }
@@ -191,7 +195,8 @@ class EditProfile extends BaseEditProfile
                         $this->getPhoneFormComponent(),
                         $this->getAddressFormComponent(),
                         $this->getBioFormComponent(),
-                    ]),
+                    ])
+                    ->columns(2),
 
                 Section::make('Безопасность')
                     ->schema([

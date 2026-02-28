@@ -78,9 +78,11 @@ class UserResource extends Resource
                             ->tel()
                             ->maxLength(20),
 
-                        Components\TextInput::make('address')
+                        Components\Textarea::make('address')
                             ->label('Адрес')
-                            ->maxLength(255),
+                            ->rows(3)
+                            ->maxLength(255)
+                            ->columnSpanFull(),
 
                         Components\Textarea::make('bio')
                             ->label('Дополнительная информация')
