@@ -29,7 +29,7 @@ class UserResource extends Resource
 
     protected static ?string $navigationLabel = 'Пользователи';
 
-    protected static ?string $modelLabel = 'пользователь';
+    protected static ?string $modelLabel = 'пользователя';
 
     protected static ?string $pluralModelLabel = 'пользователи';
 
@@ -66,6 +66,24 @@ class UserResource extends Resource
                             ->dehydrateStateUsing(fn ($state) => filled($state) ? Hash::make($state) : null)
                             ->dehydrated(fn ($state) => filled($state))
                             ->maxLength(255)
+                            ->columnSpanFull(),
+                    ])->columns(2),
+
+                SchemaComponents\Section::make('Контактные данные')
+                    ->schema([
+                        Components\TextInput::make('phone')
+                            ->label('Телефон')
+                            ->tel()
+                            ->maxLength(20),
+
+                        Components\TextInput::make('address')
+                            ->label('Адрес')
+                            ->maxLength(255),
+
+                        Components\Textarea::make('bio')
+                            ->label('Дополнительная информация')
+                            ->rows(3)
+                            ->maxLength(1000)
                             ->columnSpanFull(),
                     ])->columns(2),
 
