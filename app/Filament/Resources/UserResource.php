@@ -178,7 +178,7 @@ class UserResource extends Resource
                     ->label('Создан')
                     ->formatStateUsing(fn ($state) => format_datetime_moscow($state))
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('roles')

@@ -192,7 +192,7 @@ class ManagementResource extends Resource
                     ->label('Создан')
                     ->formatStateUsing(fn ($state) => format_datetime_moscow($state))
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
 
                 Columns\TextColumn::make('updated_at')
                     ->label('Обновлен')
