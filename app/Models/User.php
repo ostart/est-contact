@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Notifications\VerifyEmail as AppVerifyEmail;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -15,7 +17,7 @@ use Spatie\Permission\Traits\HasRoles;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
-class User extends Authenticatable implements FilamentUser, MustVerifyEmail
+class User extends Authenticatable implements FilamentUser, MustVerifyEmail, HasAvatar
 {
     use HasFactory, Notifiable, HasRoles, LogsActivity;
 
@@ -28,6 +30,10 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         'name',
         'email',
         'password',
+        'phone',
+        'address',
+        'bio',
+        'avatar',
         'is_approved',
         'has_dashboard_access',
         'is_banned',
@@ -115,6 +121,15 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     public function issuedWarnings(): HasMany
     {
         return $this->hasMany(UserWarning::class, 'warned_by');
+    }
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        if ($this->avatar) {
+            return Storage::disk('public')->url($this->avatar);
+        }
+
+        return null;
     }
 }
 

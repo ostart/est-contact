@@ -82,6 +82,11 @@ class ManagementResource extends Resource
                             ->label('')
                             ->relationship()
                             ->schema([
+                                Components\Placeholder::make('user_name')
+                                    ->label('Автор')
+                                    ->content(fn ($record) => $record?->user?->name ?? '—')
+                                    ->visibleOn('edit'),
+
                                 Components\Textarea::make('comment')
                                     ->label('Комментарий')
                                     ->required()
