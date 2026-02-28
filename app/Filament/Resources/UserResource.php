@@ -19,6 +19,8 @@ use Filament\Tables;
 use Filament\Tables\Columns;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 use Spatie\Permission\Models\Role;
 
 class UserResource extends Resource
@@ -151,6 +153,57 @@ class UserResource extends Resource
                     ->label('Имя')
                     ->searchable()
                     ->sortable(),
+
+                Columns\ImageColumn::make('avatar')
+                    ->label('')
+                    ->circular()
+                    ->size(32)
+                    ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&background=random')
+                    ->getStateUsing(fn ($record) => $record->avatar ? Storage::disk('public')->url($record->avatar) : null)
+                    ->action(
+                        Actions\Action::make('viewContact')
+                            ->modalHeading(fn (User $record) => "Контакт: {$record->name}")
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel('Закрыть')
+                            ->modalContent(function (User $record) {
+                                $avatarUrl = $record->avatar 
+                                    ? Storage::disk('public')->url($record->avatar) 
+                                    : 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&size=120&background=random';
+                                
+                                $html = '<div style="text-align: center; margin-bottom: 16px;">';
+                                $html .= '<img src="' . e($avatarUrl) . '" alt="Avatar" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #e5e7eb; margin: 0 auto;">';
+                                $html .= '</div>';
+                                
+                                $html .= '<div style="space-y: 8px;">';
+                                
+                                $html .= '<p><strong>Email:</strong> ' . e($record->email) . '</p>';
+                                
+                                if ($record->phone) {
+                                    $html .= '<p><strong>Телефон:</strong> ' . e($record->phone) . '</p>';
+                                } else {
+                                    $html .= '<p><strong>Телефон:</strong> <span style="color: #9ca3af;">не указан</span></p>';
+                                }
+                                
+                                if ($record->address) {
+                                    $html .= '<p><strong>Адрес:</strong> ' . e($record->address) . '</p>';
+                                } else {
+                                    $html .= '<p><strong>Адрес:</strong> <span style="color: #9ca3af;">не указан</span></p>';
+                                }
+                                
+                                if ($record->bio) {
+                                    $html .= '<p><strong>Дополнительно:</strong> ' . e($record->bio) . '</p>';
+                                } else {
+                                    $html .= '<p><strong>Дополнительно:</strong> <span style="color: #9ca3af;">не указано</span></p>';
+                                }
+                                
+                                $roles = $record->roles->pluck('name')->implode(', ');
+                                $html .= '<p><strong>Роли:</strong> ' . e($roles ?: 'нет ролей') . '</p>';
+                                
+                                $html .= '</div>';
+                                
+                                return new HtmlString($html);
+                            })
+                    ),
 
                 Columns\TextColumn::make('email')
                     ->label('Email')

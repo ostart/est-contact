@@ -4,11 +4,17 @@ namespace App\Filament\Widgets;
 
 use App\Enums\ContactStatus;
 use App\Models\User;
+use Filament\Actions\Action;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 
 class UsersTableWidget extends BaseWidget
 {
@@ -63,12 +69,83 @@ class UsersTableWidget extends BaseWidget
                     ->searchable()
                     ->sortable(),
 
+                ImageColumn::make('avatar')
+                    ->label('')
+                    ->circular()
+                    ->size(32)
+                    ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&background=random')
+                    ->getStateUsing(fn ($record) => $record->avatar ? Storage::disk('public')->url($record->avatar) : null)
+                    ->action(
+                        Action::make('viewContact')
+                            ->modalHeading(fn (User $record) => "Контакт: {$record->name}")
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel('Закрыть')
+                            ->modalContent(function (User $record) {
+                                $avatarUrl = $record->avatar 
+                                    ? Storage::disk('public')->url($record->avatar) 
+                                    : 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&size=120&background=random';
+                                
+                                $html = '<div style="text-align: center; margin-bottom: 16px;">';
+                                $html .= '<img src="' . e($avatarUrl) . '" alt="Avatar" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #e5e7eb; margin: 0 auto;">';
+                                $html .= '</div>';
+                                
+                                $html .= '<div style="space-y: 8px;">';
+                                
+                                $html .= '<p><strong>Email:</strong> ' . e($record->email) . '</p>';
+                                
+                                if ($record->phone) {
+                                    $html .= '<p><strong>Телефон:</strong> ' . e($record->phone) . '</p>';
+                                } else {
+                                    $html .= '<p><strong>Телефон:</strong> <span style="color: #9ca3af;">не указан</span></p>';
+                                }
+                                
+                                if ($record->address) {
+                                    $html .= '<p><strong>Адрес:</strong> ' . e($record->address) . '</p>';
+                                } else {
+                                    $html .= '<p><strong>Адрес:</strong> <span style="color: #9ca3af;">не указан</span></p>';
+                                }
+                                
+                                if ($record->bio) {
+                                    $html .= '<p><strong>Дополнительно:</strong> ' . e($record->bio) . '</p>';
+                                } else {
+                                    $html .= '<p><strong>Дополнительно:</strong> <span style="color: #9ca3af;">не указано</span></p>';
+                                }
+                                
+                                $roles = $record->roles->pluck('name')->implode(', ');
+                                $html .= '<p><strong>Роли:</strong> ' . e($roles ?: 'нет ролей') . '</p>';
+                                
+                                $html .= '</div>';
+                                
+                                return new HtmlString($html);
+                            })
+                    ),
+
                 TextColumn::make('roles.name')
                     ->label('Роли')
                     ->badge()
-                    ->formatStateUsing(fn($state) => $state)
+                    ->formatStateUsing(function ($state) {
+                        $abbreviations = [
+                            'leader' => 'L',
+                            'manager' => 'M',
+                            'administrator' => 'A',
+                            'superadmin' => 'S',
+                        ];
+                        return $abbreviations[strtolower($state)] ?? strtoupper(substr($state, 0, 1));
+                    })
+                    ->tooltip(function ($record) {
+                        $roleNames = $record->roles->pluck('name')->map(function ($role) {
+                            $fullNames = [
+                                'leader' => 'Leader',
+                                'manager' => 'Manager',
+                                'administrator' => 'Administrator',
+                                'superadmin' => 'Superadmin',
+                            ];
+                            return $fullNames[strtolower($role)] ?? $role;
+                        });
+                        return $roleNames->implode(', ');
+                    })
                     ->listWithLineBreaks()
-                    ->limitList(2),
+                    ->limitList(4),
 
                 TextColumn::make('total_contacts')
                     ->label('Всего')
