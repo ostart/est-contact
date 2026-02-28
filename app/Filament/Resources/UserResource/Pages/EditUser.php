@@ -11,6 +11,8 @@ class EditUser extends EditRecord
 {
     protected static string $resource = UserResource::class;
 
+    protected bool $wasApprovedBefore = false;
+
     protected function getHeaderActions(): array
     {
         return [
@@ -24,13 +26,15 @@ class EditUser extends EditRecord
         return $this->getResource()::getUrl('index');
     }
 
+    protected function beforeSave(): void
+    {
+        $this->wasApprovedBefore = (bool) $this->record->getOriginal('is_approved');
+    }
+
     protected function afterSave(): void
     {
-        $record = $this->record;
-        $original = $record->getOriginal();
-
-        if (!($original['is_approved'] ?? false) && $record->is_approved) {
-            $record->notify(new UserApprovedNotification());
+        if (!$this->wasApprovedBefore && $this->record->is_approved) {
+            $this->record->notify(new UserApprovedNotification());
         }
     }
 }
