@@ -85,6 +85,12 @@ php artisan db:seed --force
 - Перед сидером при необходимости поправьте в `.env` переменные `SEED_ADMIN_*` (админ при первом заполнении БД).
 - Настройки почты в БД (таблица `system_settings`) при сидинге заполняются из **MAIL_*** в `.env`. Задайте их до запуска `db:seed`. Если после сидинга почта в БД пустая — выполните **перед** сидингом `php artisan config:clear` (чтобы Laravel заново прочитал `.env`), затем снова `php artisan db:seed --force`. Опционально: `SEED_MAIL_NOTIFICATIONS_ENABLED=1` — включить рассылку при первом сидинге.
 
+Если БД уже есть и можно
+удалить и пересоздать БД с сидингом
+```bash
+php artisan migrate:fresh --seed
+```
+
 ### 2.4 Альтернатива: Бэкап и перенос БД (скрипты в репозитории на случай проблем или отсутствия artisan)
 
 - **Экспорт локальной БД** (резервная копия или перенос):
@@ -138,9 +144,29 @@ php artisan config:cache
 1. **Права на каталоги:**
    - `storage` и `bootstrap/cache` — права на запись для веб-сервера (обычно `chmod -R 775 storage bootstrap/cache` и владелец — пользователь PHP/веб-сервера).
 
-2. **Одна команда на сервере (из корня проекта):**
+2. **Символьная ссылка для загружаемых файлов (аватары, фото и т.д.):**
+   
+   Laravel хранит загруженные файлы в `storage/app/public/`. Чтобы они были доступны по URL через папку `public/storage`, нужно создать символьную ссылку:
+   
+   ```bash
+   php artisan storage:link
+   ```
+   
+   Эта команда создаст ссылку `public/storage` → `storage/app/public`.
+   
+   **Если команда не работает на shared-хостинге** (ошибка прав или symlinks отключены), создайте ссылку вручную:
+   
+   ```bash
+   cd ~/est-contact/public
+   ln -s ../storage/app/public storage
+   ```
+   
+   **Проверка:** после создания ссылки загруженные файлы (например, аватары пользователей) должны открываться по URL вида `https://ваш-домен.ru/storage/avatars/filename.jpg`.
+
+4. **Одна команда на сервере (из корня проекта):**
    ```bash
    composer install --no-dev --optimize-autoloader
+   php artisan storage:link
    php artisan config:cache
    php artisan route:cache
    php artisan view:cache
@@ -148,7 +174,12 @@ php artisan config:cache
    php artisan db:seed --force
    ```
 
-3. **Очередь и планировщик (если используете):**
+   Удалить и пересоздать БД с сидингом:
+   ```bash
+   php artisan migrate:fresh --seed
+   ```
+
+5. **Очередь и планировщик (если используете):**
    - В проекте есть команда `contacts:check-overdue`. Для её запуска по расписанию на TimeWeb добавьте задание cron, через админку TimeWeb. Варианты записи:
    
    **Вариант 3 — через скрипт (рекомендуется):**
@@ -163,9 +194,9 @@ php artisan config:cache
    
    - В `app/Console/Kernel.php` (или в `routes/console.php` в Laravel 11) должно быть запланировано выполнение `contacts:check-overdue`.
 
-4. **Почта:** см. раздел 3 выше.
+6. **Почта:** см. раздел 3 выше.
 
-5. **SSL:** в панели TimeWeb включить HTTPS для домена.
+7. **SSL:** в панели TimeWeb включить HTTPS для домена.
 
 ---
 
@@ -185,6 +216,7 @@ php artisan config:cache
 - [ ] `.env` создан на сервере, в нём production-значения (APP_ENV=production, APP_DEBUG=false, APP_URL, DB_*, MAIL_*, SEED_* при необходимости).
 - [ ] Выполнены `migrate --force` и при первом запуске `db:seed --force`.
 - [ ] Права на запись: `storage`, `bootstrap/cache`.
+- [ ] Выполнена команда `php artisan storage:link` (для загрузки аватаров и файлов).
 - [ ] Кэши конфига/маршрутов/видов при необходимости обновлены после смены .env.
 - [ ] Cron для планировщика (если нужна команда просрочки контактов).
 - [ ] SSL включён, почта настроена.

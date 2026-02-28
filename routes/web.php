@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\VerifyEmailController;
 
@@ -8,6 +9,25 @@ use App\Http\Controllers\VerifyEmailController;
 Route::get('/', function () {
     return redirect('/admin/login');
 });
+
+// Отдача файлов из storage (обход ограничений симлинков на shared-хостингах)
+Route::get('/storage/{path}', function (string $path) {
+    $fullPath = storage_path('app/public/' . $path);
+    
+    if (!file_exists($fullPath)) {
+        abort(404);
+    }
+    
+    // Защита от выхода за пределы директории
+    $realPath = realpath($fullPath);
+    $storagePath = realpath(storage_path('app/public'));
+    
+    if (!$realPath || !str_starts_with($realPath, $storagePath)) {
+        abort(403);
+    }
+    
+    return response()->file($fullPath);
+})->where('path', '.*')->name('storage.serve');
 
 // Верификация email по ссылке из письма (без обязательного входа — иначе в БД не проставляется email_verified_at)
 Route::get('/admin/verify-email/{id}/{hash}', VerifyEmailController::class)
