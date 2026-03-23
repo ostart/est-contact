@@ -78,6 +78,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
 
     /**
      * Отправка письма верификации по подписанной ссылке (без обязательного входа).
+     * Не зависит от mail_notifications_enabled — письмо должно уходить при любой рассылке в панели.
      * Маршрут app.email.verify обрабатывает переход из письма и проставляет email_verified_at в БД.
      */
     public function sendEmailVerificationNotification(): void

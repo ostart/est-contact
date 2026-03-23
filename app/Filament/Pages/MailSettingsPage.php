@@ -68,7 +68,7 @@ class MailSettingsPage extends Page
     protected function fillForm(): void
     {
         $data = [
-            'mail_notifications_enabled' => (bool) filter_var(SystemSetting::get('mail_notifications_enabled', '0'), FILTER_VALIDATE_BOOLEAN),
+            'mail_notifications_enabled' => SystemSetting::mailNotificationsEnabled(),
             'mail_host' => SystemSetting::get('mail_host', ''),
             'mail_port' => SystemSetting::get('mail_port', '465'),
             'mail_encryption' => SystemSetting::get('mail_encryption', 'ssl'),
@@ -142,7 +142,7 @@ class MailSettingsPage extends Page
         return $schema
             ->components([
                 Section::make('Рассылка')
-                    ->description('Включите отправку email-уведомлений лидерам при назначении контакта на обработку.')
+                    ->description('Включите отправку служебных email-уведомлений в панели (назначение контакта, одобрение доступа, предупреждения и т.д.). Письмо подтверждения email при регистрации на эту настройку не зависит и отправляется всегда.')
                     ->schema([
                         Toggle::make('mail_notifications_enabled')
                             ->label('Включить рассылку уведомлений по email')

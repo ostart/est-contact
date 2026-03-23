@@ -16,7 +16,7 @@ class UserApprovedNotification extends Notification
     public function via(object $notifiable): array
     {
         $channels = ['database'];
-        if (filter_var(SystemSetting::get('mail_notifications_enabled', '0'), FILTER_VALIDATE_BOOLEAN)) {
+        if (SystemSetting::mailNotificationsEnabled()) {
             $channels[] = 'mail';
         }
         return $channels;

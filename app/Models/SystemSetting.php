@@ -39,5 +39,25 @@ class SystemSetting extends Model
             ['value' => $value]
         );
     }
+
+    /**
+     * Включена ли рассылка уведомлений на email (настройка «Почтовый сервер»).
+     *
+     * Читаем из БД без вечного кэша. При дубликатах одного ключа важно брать последнюю запись:
+     * pluck в get() для коллекции оставляет последнее значение, а value() без orderBy — первую строку.
+     */
+    public static function mailNotificationsEnabled(): bool
+    {
+        $value = static::query()
+            ->where('key', 'mail_notifications_enabled')
+            ->orderByDesc('id')
+            ->value('value');
+
+        if ($value === null) {
+            $value = static::get('mail_notifications_enabled', '0');
+        }
+
+        return filter_var((string) $value, FILTER_VALIDATE_BOOLEAN);
+    }
 }
 
