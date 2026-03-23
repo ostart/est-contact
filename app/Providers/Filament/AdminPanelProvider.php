@@ -33,7 +33,7 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Blue,
             ])
             ->font('Inter')
-            ->brandName('Есть Контакт')
+            ->brandName('БВ Контакт')
             ->defaultThemeMode(ThemeMode::Light)
             ->favicon(asset('favicon.ico'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

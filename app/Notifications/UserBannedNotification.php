@@ -32,7 +32,7 @@ class UserBannedNotification extends Notification
         $mail = (new MailMessage)
             ->subject('Ваш аккаунт заблокирован')
             ->greeting('Здравствуйте, ' . $notifiable->name . '!')
-            ->line('Ваш аккаунт в системе «Есть Контакт» был заблокирован администратором.');
+            ->line('Ваш аккаунт в системе «БВ Контакт» был заблокирован администратором.');
 
         if ($this->reason) {
             $mail->line('**Причина блокировки:**')
@@ -41,7 +41,7 @@ class UserBannedNotification extends Notification
 
         return $mail
             ->line('Доступ к системе ограничен. Если вы считаете, что это ошибка, обратитесь к администратору.')
-            ->salutation('С уважением, Администрация «Есть Контакт»');
+            ->salutation('С уважением, Администрация «БВ Контакт»');
     }
 
     /**

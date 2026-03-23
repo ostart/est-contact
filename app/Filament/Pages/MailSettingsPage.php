@@ -75,7 +75,7 @@ class MailSettingsPage extends Page
             'mail_username' => SystemSetting::get('mail_username', ''),
             'mail_password' => SystemSetting::get('mail_password', ''),
             'mail_from_address' => SystemSetting::get('mail_from_address', ''),
-            'mail_from_name' => SystemSetting::get('mail_from_name', 'Есть Контакт'),
+            'mail_from_name' => SystemSetting::get('mail_from_name', 'БВ Контакт'),
         ];
 
         $this->form->fill($data);
@@ -188,11 +188,11 @@ class MailSettingsPage extends Page
                         TextInput::make('mail_from_address')
                             ->label('Email отправителя')
                             ->email()
-                            ->placeholder('noreply@ваш-домен.ru')
+                            ->placeholder('noreply@бв-контакт.рф')
                             ->maxLength(255),
                         TextInput::make('mail_from_name')
                             ->label('Имя отправителя')
-                            ->placeholder('Есть Контакт')
+                            ->placeholder('БВ Контакт')
                             ->maxLength(255),
                     ])
                     ->columns(2),

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Подтверждение email - Есть Контакт</title>
+    <title>Подтверждение email - БВ Контакт</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -203,7 +203,7 @@
             <h3>Что нужно сделать:</h3>
             <ol>
                 <li>Откройте вашу электронную почту</li>
-                <li>Найдите письмо от «Есть Контакт»</li>
+                <li>Найдите письмо от «БВ Контакт»</li>
                 <li>Нажмите на ссылку подтверждения</li>
                 <li>Вернитесь и войдите в систему</li>
             </ol>
