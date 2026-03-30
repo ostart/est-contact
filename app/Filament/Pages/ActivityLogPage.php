@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Support\PhoneNumberHelper;
 use Filament\Pages\Page;
 use Filament\Panel;
 use Filament\Tables\Columns\TextColumn;
@@ -65,13 +66,34 @@ class ActivityLogPage extends Page implements HasTable
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         return $query->where(function (Builder $q) use ($search) {
                             $q->whereHasMorph('subject', [\App\Models\Contact::class], function (Builder $q) use ($search) {
-                                $q->where('full_name', 'like', "%{$search}%");
+                                $q->where(function (Builder $inner) use ($search) {
+                                    $inner->where('full_name', 'like', '%'.addcslashes($search, '%_\\').'%');
+                                    $inner->orWhere(function (Builder $phoneQ) use ($search) {
+                                        PhoneNumberHelper::applyColumnSearch(
+                                            $phoneQ,
+                                            'phone',
+                                            $search,
+                                            PhoneNumberHelper::CONTACT_REGIONS
+                                        );
+                                    });
+                                });
                             })
                             ->orWhereHasMorph('subject', [\App\Models\User::class], function (Builder $q) use ($search) {
-                                $q->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%");
+                                $q->where(function (Builder $inner) use ($search) {
+                                    $inner->where('name', 'like', '%'.addcslashes($search, '%_\\').'%')
+                                        ->orWhere('email', 'like', '%'.addcslashes($search, '%_\\').'%');
+                                    $inner->orWhere(function (Builder $phoneQ) use ($search) {
+                                        PhoneNumberHelper::applyColumnSearch(
+                                            $phoneQ,
+                                            'phone',
+                                            $search,
+                                            [PhoneNumberHelper::DEFAULT_REGION]
+                                        );
+                                    });
+                                });
                             })
                             ->orWhereHasMorph('subject', [\App\Models\SystemSetting::class], function (Builder $q) use ($search) {
-                                $q->where('key', 'like', "%{$search}%");
+                                $q->where('key', 'like', '%'.addcslashes($search, '%_\\').'%');
                             });
                         });
                     }),

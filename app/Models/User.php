@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Notifications\VerifyEmail as AppVerifyEmail;
+use App\Support\PhoneNumberHelper;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasAvatar;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Filament\Panel;
@@ -96,6 +98,21 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
             'is_banned' => 'boolean',
             'banned_at' => 'datetime',
         ];
+    }
+
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            set: function (?string $value): array {
+                if ($value === null || trim($value) === '') {
+                    return ['phone' => null];
+                }
+
+                $normalized = PhoneNumberHelper::normalize(trim($value), [PhoneNumberHelper::DEFAULT_REGION]);
+
+                return ['phone' => $normalized ?? trim($value)];
+            },
+        );
     }
 
     public function getActivitylogOptions(): LogOptions

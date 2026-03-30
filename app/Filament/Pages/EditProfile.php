@@ -3,11 +3,13 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Resources\ContactResource;
+use App\Support\PhoneNumberHelper;
 use Filament\Actions\Action;
 use Filament\Auth\Pages\EditProfile as BaseEditProfile;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Field;
 use Filament\Forms\Components\TextInput;
 use Filament\Facades\Filament;
 use Filament\Schemas\Components\Actions;
@@ -16,6 +18,8 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
+use Illuminate\Validation\Rule;
+use Closure;
 
 class EditProfile extends BaseEditProfile
 {
@@ -151,7 +155,30 @@ class EditProfile extends BaseEditProfile
         return TextInput::make('phone')
             ->label('Телефон')
             ->tel()
-            ->maxLength(20)
+            ->maxLength(32)
+            ->rules([
+                'nullable',
+                Rule::phone()->country([PhoneNumberHelper::DEFAULT_REGION]),
+            ])
+            ->rule(static function (Field $component): Closure {
+                return function (string $attribute, mixed $value, Closure $fail) use ($component): void {
+                    if (! filled($value)) {
+                        return;
+                    }
+                    $e164 = PhoneNumberHelper::normalize($value, [PhoneNumberHelper::DEFAULT_REGION]);
+                    if ($e164 === null) {
+                        return;
+                    }
+                    $query = User::query()->where('phone', $e164);
+                    $record = $component->getRecord();
+                    if ($record && $record->getKey()) {
+                        $query->whereKeyNot($record->getKey());
+                    }
+                    if ($query->exists()) {
+                        $fail('Этот номер телефона уже используется другим пользователем.');
+                    }
+                };
+            })
             ->columnSpan(['default' => 'full', 'md' => 1]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ContactResource\Pages;
 use App\Models\Contact;
+use App\Support\PhoneNumberHelper;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components;
@@ -16,6 +17,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Tables\Columns;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\Rule;
 
 class ContactResource extends Resource
 {
@@ -57,7 +59,10 @@ class ContactResource extends Resource
                             ->label('Телефон')
                             ->tel()
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(32)
+                            ->rules([
+                                Rule::phone()->country(PhoneNumberHelper::CONTACT_REGIONS),
+                            ]),
 
                         Components\TextInput::make('email')
                             ->label('Email')
@@ -152,7 +157,9 @@ class ContactResource extends Resource
 
                 Columns\TextColumn::make('phone')
                     ->label('Телефон')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): void {
+                        PhoneNumberHelper::applyColumnSearch($query, 'phone', $search, PhoneNumberHelper::CONTACT_REGIONS);
+                    })
                     ->copyable(),
 
                 Columns\TextColumn::make('email')

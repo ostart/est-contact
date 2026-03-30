@@ -5,7 +5,9 @@ namespace App\Filament\Resources;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ManagementResource\Pages;
 use App\Models\Contact;
+use App\Support\PhoneNumberHelper;
 use BackedEnum;
+use Closure;
 use Filament\Actions;
 use Filament\Forms\Components;
 use Filament\Schemas\Components\Utilities\Set;
@@ -15,8 +17,10 @@ use Filament\Schemas\Components as SchemaComponents;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Columns;
+use Filament\Forms\Components\Field;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\Rule;
 
 class ManagementResource extends Resource
 {
@@ -59,11 +63,32 @@ class ManagementResource extends Resource
                         Components\TextInput::make('phone')
                             ->label('Телефон')
                             ->required()
-                            ->maxLength(255)
+                            ->maxLength(32)
                             ->tel()
                             ->telRegex('/^[0-9\s\+\-\(\)]+$/')
-                            ->rule('phone:AUTO,RU,US,UA,BY,KZ')
-                            ->helperText('Введите номер телефона в международном формате (например: +7 915 123-45-55)'),
+                            ->rules([
+                                Rule::phone()->country(PhoneNumberHelper::CONTACT_REGIONS),
+                            ])
+                            ->rule(static function (Field $component): Closure {
+                                return function (string $attribute, mixed $value, Closure $fail) use ($component): void {
+                                    if (! filled($value)) {
+                                        return;
+                                    }
+                                    $e164 = PhoneNumberHelper::normalize($value, PhoneNumberHelper::CONTACT_REGIONS);
+                                    if ($e164 === null) {
+                                        return;
+                                    }
+                                    $query = Contact::query()->where('phone', $e164);
+                                    $record = $component->getRecord();
+                                    if ($record && $record->getKey()) {
+                                        $query->whereKeyNot($record->getKey());
+                                    }
+                                    if ($query->exists()) {
+                                        $fail('Контакт с таким номером телефона уже существует.');
+                                    }
+                                };
+                            })
+                            ->helperText('Номер в международном формате: РФ и страны СНГ (+7 …), США (+1 …). После сохранения хранится в формате E.164.'),
 
                         Components\TextInput::make('email')
                             ->label('Email')
@@ -166,7 +191,9 @@ class ManagementResource extends Resource
 
                 Columns\TextColumn::make('phone')
                     ->label('Телефон')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): void {
+                        PhoneNumberHelper::applyColumnSearch($query, 'phone', $search, PhoneNumberHelper::CONTACT_REGIONS);
+                    })
                     ->copyable(),
 
                 Columns\TextColumn::make('email')

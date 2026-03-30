@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
 use App\Models\UserWarning;
+use App\Support\PhoneNumberHelper;
 use App\Notifications\UserBannedNotification;
 use App\Notifications\UserUnbannedNotification;
 use App\Notifications\UserWarningNotification;
@@ -18,9 +19,12 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Columns;
 use Filament\Tables\Table;
+use Closure;
+use Filament\Forms\Components\Field;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
+use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
 class UserResource extends Resource
@@ -76,7 +80,30 @@ class UserResource extends Resource
                         Components\TextInput::make('phone')
                             ->label('Телефон')
                             ->tel()
-                            ->maxLength(20),
+                            ->maxLength(32)
+                            ->rules([
+                                'nullable',
+                                Rule::phone()->country([PhoneNumberHelper::DEFAULT_REGION]),
+                            ])
+                            ->rule(static function (Field $component): Closure {
+                                return function (string $attribute, mixed $value, Closure $fail) use ($component): void {
+                                    if (! filled($value)) {
+                                        return;
+                                    }
+                                    $e164 = PhoneNumberHelper::normalize($value, [PhoneNumberHelper::DEFAULT_REGION]);
+                                    if ($e164 === null) {
+                                        return;
+                                    }
+                                    $query = User::query()->where('phone', $e164);
+                                    $record = $component->getRecord();
+                                    if ($record && $record->getKey()) {
+                                        $query->whereKeyNot($record->getKey());
+                                    }
+                                    if ($query->exists()) {
+                                        $fail('Пользователь с таким номером телефона уже зарегистрирован.');
+                                    }
+                                };
+                            }),
 
                         Components\Textarea::make('address')
                             ->label('Адрес')
