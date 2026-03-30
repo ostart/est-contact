@@ -40,7 +40,7 @@ class EditProfile extends BaseEditProfile
     protected function getCancelFormAction(): Action
     {
         return Action::make('cancel')
-            ->label('Отменить')
+            ->label('Выйти')
             ->color('gray')
             ->url($this->getCancelUrl());
     }

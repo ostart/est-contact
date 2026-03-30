@@ -21,6 +21,36 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
 {
     use HasFactory, Notifiable, HasRoles, LogsActivity;
 
+    protected static function booted(): void
+    {
+        static::deleting(function (User $user): ?bool {
+            if ($user->isSuperAdmin()) {
+                return false;
+            }
+
+            return null;
+        });
+
+        static::updating(function (User $user): void {
+            if (! $user->isSuperAdmin()) {
+                return;
+            }
+
+            if (! $user->isDirty('is_banned') || ! $user->is_banned) {
+                return;
+            }
+
+            $user->is_banned = (bool) $user->getOriginal('is_banned');
+            $user->ban_reason = $user->getOriginal('ban_reason');
+            $user->banned_at = $user->getOriginal('banned_at');
+        });
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('superadmin');
+    }
+
     /**
      * The attributes that are mass assignable.
      *

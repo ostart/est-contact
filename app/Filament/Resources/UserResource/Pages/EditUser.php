@@ -17,6 +17,7 @@ class EditUser extends EditRecord
     {
         return [
             Actions\DeleteAction::make()
+                ->visible(fn (): bool => ! $this->record->isSuperAdmin())
                 ->successRedirectUrl(UserResource::getUrl('index')),
         ];
     }
@@ -33,6 +34,15 @@ class EditUser extends EditRecord
 
     protected function afterSave(): void
     {
+        $this->record->refresh();
+        if ($this->record->isSuperAdmin() && $this->record->is_banned) {
+            $this->record->forceFill([
+                'is_banned' => false,
+                'ban_reason' => null,
+                'banned_at' => null,
+            ])->saveQuietly();
+        }
+
         if (!$this->wasApprovedBefore && $this->record->is_approved) {
             $this->record->notify(new UserApprovedNotification());
         }

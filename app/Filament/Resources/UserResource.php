@@ -128,7 +128,14 @@ class UserResource extends Resource
                             ->label('Заблокирован')
                             ->default(false)
                             ->live()
+                            ->disabled(fn (?User $record) => $record?->isSuperAdmin() ?? false)
+                            ->helperText(fn (?User $record) => $record?->isSuperAdmin()
+                                ? 'Суперадминистратора нельзя заблокировать.'
+                                : null)
                             ->afterStateUpdated(function ($state, $record) {
+                                if ($record?->isSuperAdmin()) {
+                                    return;
+                                }
                                 if ($record) {
                                     $record->banned_at = $state ? now() : null;
                                     if (!$state) {
@@ -310,7 +317,7 @@ class UserResource extends Resource
                     ->color('danger')
                     ->iconButton()
                     ->tooltip('Заблокировать пользователя')
-                    ->visible(fn (User $record) => !$record->is_banned)
+                    ->visible(fn (User $record) => ! $record->is_banned && ! $record->isSuperAdmin())
                     ->requiresConfirmation()
                     ->modalHeading('Заблокировать пользователя')
                     ->modalDescription(fn (User $record) => "Вы уверены, что хотите заблокировать пользователя {$record->name}?")
@@ -322,6 +329,16 @@ class UserResource extends Resource
                             ->placeholder('Укажите причину блокировки (необязательно)...'),
                     ])
                     ->action(function (User $record, array $data) {
+                        if ($record->isSuperAdmin()) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Действие недоступно')
+                                ->body('Суперадминистратора нельзя заблокировать.')
+                                ->send();
+
+                            return;
+                        }
+
                         $record->update([
                             'is_banned' => true,
                             'ban_reason' => $data['ban_reason'] ?? null,
@@ -369,11 +386,13 @@ class UserResource extends Resource
                 Actions\DeleteAction::make()
                     ->iconButton()
                     ->tooltip('Удалить')
+                    ->visible(fn (User $record) => ! $record->isSuperAdmin())
                     ->successRedirectUrl(UserResource::getUrl('index')),
             ])
             ->toolbarActions([
                 Actions\BulkActionGroup::make([
                     Actions\DeleteBulkAction::make()
+                        ->authorizeIndividualRecords(fn (User $record): bool => ! $record->isSuperAdmin())
                         ->successRedirectUrl(UserResource::getUrl('index')),
                 ]),
             ])

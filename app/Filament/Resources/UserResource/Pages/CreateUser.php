@@ -17,6 +17,15 @@ class CreateUser extends CreateRecord
         if ($this->record->roles->isEmpty()) {
             $this->record->assignRole('leader');
         }
+
+        $this->record->refresh();
+        if ($this->record->isSuperAdmin() && $this->record->is_banned) {
+            $this->record->forceFill([
+                'is_banned' => false,
+                'ban_reason' => null,
+                'banned_at' => null,
+            ])->saveQuietly();
+        }
     }
 
     protected function getRedirectUrl(): string
