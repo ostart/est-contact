@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ContactResource\Pages;
 
+use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ContactResource;
 use App\Models\Contact;
@@ -60,6 +61,9 @@ class ViewContact extends ViewRecord
                             ->copyable(),
                         Components\TextEntry::make('district')
                             ->label('Округ'),
+                        Components\TextEntry::make('source')
+                            ->label('Источник')
+                            ->formatStateUsing(fn ($state) => $state->getLabel()),
                         Components\TextEntry::make('status')
                             ->label('Статус')
                             ->badge()

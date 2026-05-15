@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ManagementResource\Pages;
 use App\Models\Contact;
@@ -99,6 +100,13 @@ class ManagementResource extends Resource
                         Components\TextInput::make('district')
                             ->label('Округ')
                             ->maxLength(255),
+
+                        Components\Select::make('source')
+                            ->label('Источник')
+                            ->options(ContactSource::options())
+                            ->default(ContactSource::OTHER->value)
+                            ->required()
+                            ->native(false),
                     ])->columns(2),
 
                 SchemaComponents\Section::make('Комментарии')
@@ -207,6 +215,12 @@ class ManagementResource extends Resource
                     ->searchable()
                     ->toggleable(),
 
+                Columns\TextColumn::make('source')
+                    ->label('Источник')
+                    ->formatStateUsing(fn ($state): string => ($state instanceof ContactSource ? $state : ContactSource::from($state))->getLabel())
+                    ->sortable()
+                    ->toggleable(),
+
                 Columns\TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
@@ -242,6 +256,11 @@ class ManagementResource extends Resource
                         ContactStatus::SUCCESS->value => ContactStatus::SUCCESS->getLabel(),
                         ContactStatus::FAILED->value => ContactStatus::FAILED->getLabel(),
                     ]),
+
+                Tables\Filters\SelectFilter::make('source')
+                    ->label('Источник')
+                    ->options(ContactSource::options())
+                    ->native(false),
 
                 Tables\Filters\SelectFilter::make('assigned_leader_id')
                     ->label('Ответственный')

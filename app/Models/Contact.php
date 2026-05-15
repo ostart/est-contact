@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Support\PhoneNumberHelper;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -15,17 +16,23 @@ class Contact extends Model
 {
     use LogsActivity;
 
+    protected $attributes = [
+        'source' => 'other',
+    ];
+
     protected $fillable = [
         'full_name',
         'phone',
         'email',
         'district',
+        'source',
         'status',
         'assigned_leader_id',
         'created_by',
     ];
 
     protected $casts = [
+        'source' => ContactSource::class,
         'status' => ContactStatus::class,
     ];
 
@@ -47,7 +54,7 @@ class Contact extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['full_name', 'phone', 'email', 'district', 'status', 'assigned_leader_id'])
+            ->logOnly(['full_name', 'phone', 'email', 'district', 'source', 'status', 'assigned_leader_id'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
