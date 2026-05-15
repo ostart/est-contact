@@ -3,13 +3,13 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Resources\ContactResource;
+use App\Models\User;
 use App\Support\PhoneNumberHelper;
 use Filament\Actions\Action;
 use Filament\Auth\Pages\EditProfile as BaseEditProfile;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Field;
 use Filament\Forms\Components\TextInput;
 use Filament\Facades\Filament;
 use Filament\Schemas\Components\Actions;
@@ -27,11 +27,6 @@ class EditProfile extends BaseEditProfile
     {
         return Filament::getCurrentPanel()->getProfileUrl();
     }
-    
-    protected function afterSave(): void
-    {
-        $this->redirect(Filament::getCurrentPanel()->getProfileUrl());
-    }
 
     protected function getSaveFormAction(): Action
     {
@@ -43,13 +38,14 @@ class EditProfile extends BaseEditProfile
 
     protected function getCancelFormAction(): Action
     {
-        return Action::make('cancel')
-            ->label('Выйти')
+        return Action::make('home')
+            ->label('На главную')
             ->color('gray')
-            ->url($this->getCancelUrl());
+            ->icon('heroicon-o-home')
+            ->url($this->getHomeUrl());
     }
 
-    protected function getCancelUrl(): string
+    protected function getHomeUrl(): string
     {
         $user = auth()->user();
 
@@ -160,8 +156,8 @@ class EditProfile extends BaseEditProfile
                 'nullable',
                 Rule::phone()->country([PhoneNumberHelper::DEFAULT_REGION]),
             ])
-            ->rule(static function (Field $component): Closure {
-                return function (string $attribute, mixed $value, Closure $fail) use ($component): void {
+            ->rule(static function (): Closure {
+                return function (string $attribute, mixed $value, Closure $fail): void {
                     if (! filled($value)) {
                         return;
                     }
@@ -169,12 +165,11 @@ class EditProfile extends BaseEditProfile
                     if ($e164 === null) {
                         return;
                     }
-                    $query = User::query()->where('phone', $e164);
-                    $record = $component->getRecord();
-                    if ($record && $record->getKey()) {
-                        $query->whereKeyNot($record->getKey());
-                    }
-                    if ($query->exists()) {
+                    $exists = User::query()
+                        ->where('phone', $e164)
+                        ->whereKeyNot(auth()->id())
+                        ->exists();
+                    if ($exists) {
                         $fail('Этот номер телефона уже используется другим пользователем.');
                     }
                 };
