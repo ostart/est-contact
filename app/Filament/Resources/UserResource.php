@@ -311,7 +311,7 @@ class UserResource extends Resource
                 Actions\Action::make('warn')
                     ->label('Предупреждение')
                     ->icon('heroicon-o-exclamation-triangle')
-                    ->color('primary')
+                    ->color('warning')
                     ->iconButton()
                     ->tooltip('Отправить предупреждение')
                     ->form([
