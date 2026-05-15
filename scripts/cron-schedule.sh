@@ -6,4 +6,4 @@
 
 set -e
 cd "$(dirname "$0")/.."
-php artisan schedule:run >> /dev/null 2>&1
+/opt/php8.3/bin/php artisan schedule:run >> storage/logs/cron-schedule.log 2>&1

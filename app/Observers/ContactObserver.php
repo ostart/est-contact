@@ -2,9 +2,11 @@
 
 namespace App\Observers;
 
+use App\Enums\ContactStatus;
 use App\Models\Contact;
 use App\Models\ContactStatusHistory;
 use App\Notifications\ContactAssignedNotification;
+use App\Notifications\ContactOverdueNotification;
 use Carbon\Carbon;
 
 class ContactObserver
@@ -45,6 +47,13 @@ class ContactObserver
             $leader = $contact->assignedLeader;
             if ($leader) {
                 $leader->notify(new ContactAssignedNotification($contact));
+            }
+        }
+
+        if ($contact->wasChanged('status') && $contact->status === ContactStatus::OVERDUE && $contact->assigned_leader_id) {
+            $leader = $contact->assignedLeader;
+            if ($leader) {
+                $leader->notify(new ContactOverdueNotification($contact));
             }
         }
     }
