@@ -127,7 +127,23 @@ class UserResource extends Resource
                             ->default(fn ($record) => $record ? [] : [Role::where('name', 'leader')->first()?->id])
                             ->required()
                             ->columns(4)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->live(),
+
+                        Components\Toggle::make('can_use_contact_filters')
+                            ->label('Разрешить фильтрацию списка контактов')
+                            ->helperText('Включено — лидер может открыть фильтры и менять отбор. Выключено — отбор по умолчанию «Мои контакты в работе» остаётся, но изменить фильтры лидер не может.')
+                            ->default(false)
+                            ->visible(function ($get): bool {
+                                $leaderRoleId = Role::query()->where('name', 'leader')->value('id');
+                                if ($leaderRoleId === null) {
+                                    return false;
+                                }
+
+                                $roles = $get('roles');
+
+                                return is_array($roles) && in_array((int) $leaderRoleId, array_map('intval', $roles), true);
+                            }),
 
                         Components\Toggle::make('is_approved')
                             ->label('Доступ в систему разрешен')
@@ -263,6 +279,14 @@ class UserResource extends Resource
 
                 Columns\IconColumn::make('has_dashboard_access')
                     ->label('Dashboard')
+                    ->boolean()
+                    ->sortable(),
+
+                Columns\IconColumn::make('can_use_contact_filters')
+                    ->label('Фильтры контактов')
+                    ->getStateUsing(fn (User $record): ?bool => $record->hasRole('leader')
+                        ? (bool) $record->can_use_contact_filters
+                        : null)
                     ->boolean()
                     ->sortable(),
 

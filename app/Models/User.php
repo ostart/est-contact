@@ -68,6 +68,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
         'avatar',
         'is_approved',
         'has_dashboard_access',
+        'can_use_contact_filters',
         'is_banned',
         'ban_reason',
         'banned_at',
@@ -95,6 +96,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
             'password' => 'hashed',
             'is_approved' => 'boolean',
             'has_dashboard_access' => 'boolean',
+            'can_use_contact_filters' => 'boolean',
             'is_banned' => 'boolean',
             'banned_at' => 'datetime',
         ];
@@ -118,7 +120,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'email', 'is_approved', 'has_dashboard_access', 'is_banned'])
+            ->logOnly(['name', 'email', 'is_approved', 'has_dashboard_access', 'can_use_contact_filters', 'is_banned'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }

@@ -153,9 +153,15 @@ class ContactResource extends Resource
 
     public static function table(Table $table): Table
     {
-        $isLeader = auth()->user()->hasRole('leader');
+        $user = auth()->user();
+        $isLeader = $user->hasRole('leader');
+        $leaderFiltersUiLocked = $isLeader && ! $user->can_use_contact_filters;
 
-        return $table
+        $applyLeaderContactsInWorkScope = fn (Builder $query): Builder => $query
+            ->where('assigned_leader_id', auth()->id())
+            ->whereNotIn('status', [ContactStatus::SUCCESS->value, ContactStatus::FAILED->value]);
+
+        $table = $table
             ->columns([
                 Columns\TextColumn::make('full_name')
                     ->label('ФИО')
@@ -210,41 +216,52 @@ class ContactResource extends Resource
                     ->formatStateUsing(fn ($state) => format_datetime_moscow($state))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('status')
-                    ->label('Статус')
-                    ->options([
-                        ContactStatus::NOT_PROCESSED->value => ContactStatus::NOT_PROCESSED->getLabel(),
-                        ContactStatus::ASSIGNED->value => ContactStatus::ASSIGNED->getLabel(),
-                        ContactStatus::OVERDUE->value => ContactStatus::OVERDUE->getLabel(),
-                        ContactStatus::SUCCESS->value => ContactStatus::SUCCESS->getLabel(),
-                        ContactStatus::FAILED->value => ContactStatus::FAILED->getLabel(),
-                    ]),
+            ]);
 
-                Tables\Filters\SelectFilter::make('source')
-                    ->label('Источник')
-                    ->options(ContactSource::options())
-                    ->native(false),
+        if ($leaderFiltersUiLocked) {
+            // Без UI-фильтров кнопка «Фильтр» не рендерится; отбор «Мои контакты в работе» — в запросе.
+            $table = $table
+                ->filters([])
+                ->modifyQueryUsing($applyLeaderContactsInWorkScope);
+        } else {
+            $table = $table
+                ->filters([
+                    Tables\Filters\SelectFilter::make('status')
+                        ->label('Статус')
+                        ->options([
+                            ContactStatus::NOT_PROCESSED->value => ContactStatus::NOT_PROCESSED->getLabel(),
+                            ContactStatus::ASSIGNED->value => ContactStatus::ASSIGNED->getLabel(),
+                            ContactStatus::OVERDUE->value => ContactStatus::OVERDUE->getLabel(),
+                            ContactStatus::SUCCESS->value => ContactStatus::SUCCESS->getLabel(),
+                            ContactStatus::FAILED->value => ContactStatus::FAILED->getLabel(),
+                        ]),
 
-                Tables\Filters\SelectFilter::make('assigned_leader_id')
-                    ->label('Ответственный')
-                    ->relationship('assignedLeader', 'name')
-                    ->searchable()
-                    ->preload(),
+                    Tables\Filters\SelectFilter::make('source')
+                        ->label('Источник')
+                        ->options(ContactSource::options())
+                        ->native(false),
 
-                Tables\Filters\Filter::make('my_contacts')
-                    ->label('Мои контакты в работе')
-                    ->query(fn (Builder $query): Builder => $query
-                        ->where('assigned_leader_id', auth()->id())
-                        ->whereNotIn('status', [ContactStatus::SUCCESS->value, ContactStatus::FAILED->value])
-                    )
-                    ->default($isLeader),
+                    Tables\Filters\SelectFilter::make('assigned_leader_id')
+                        ->label('Ответственный')
+                        ->relationship('assignedLeader', 'name')
+                        ->searchable()
+                        ->preload(),
 
-                Tables\Filters\SelectFilter::make('district')
-                    ->label('Округ')
-                    ->options(fn () => Contact::distinct()->pluck('district', 'district')->filter()),
-            ])
+                    Tables\Filters\Filter::make('my_contacts')
+                        ->label('Мои контакты в работе')
+                        ->query(fn (Builder $query): Builder => $query
+                            ->where('assigned_leader_id', auth()->id())
+                            ->whereNotIn('status', [ContactStatus::SUCCESS->value, ContactStatus::FAILED->value])
+                        )
+                        ->default($isLeader),
+
+                    Tables\Filters\SelectFilter::make('district')
+                        ->label('Округ')
+                        ->options(fn () => Contact::distinct()->pluck('district', 'district')->filter()),
+                ]);
+        }
+
+        return $table
             ->recordActions([
                 Actions\ViewAction::make()
                     ->iconButton()
@@ -253,12 +270,7 @@ class ContactResource extends Resource
             ->toolbarActions([
                 // Нет массовых действий для лидеров
             ])
-            ->defaultSort('created_at', 'desc')
-            ->modifyQueryUsing(function (Builder $query) use ($isLeader) {
-                // Для лидеров по умолчанию показываем только их контакты без финальных статусов
-                // Это поведение можно отключить фильтром "Мои контакты в работе"
-                return $query;
-            });
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getPages(): array
