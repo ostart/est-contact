@@ -5,7 +5,7 @@ namespace App\Notifications;
 use App\Filament\Resources\ContactResource;
 use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
-use App\Models\SystemSetting;
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -27,16 +27,17 @@ class ContactAssignedNotification extends Notification
 
     /**
      * Get the notification's delivery channels.
-     * Email отправляется только если в настройках включена рассылка (Почтовый сервер → Включить рассылку).
+     * Email — только если рассылка включена в настройках почты и пользователь не отключил её в профиле.
      *
      * @return array<int, string>
      */
     public function via(object $notifiable): array
     {
         $channels = ['database'];
-        if (SystemSetting::mailNotificationsEnabled()) {
+        if ($notifiable instanceof User && $notifiable->shouldReceiveMailNotifications()) {
             $channels[] = 'mail';
         }
+
         return $channels;
     }
 

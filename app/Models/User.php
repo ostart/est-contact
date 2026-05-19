@@ -65,6 +65,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
         'phone',
         'address',
         'bio',
+        'email_notifications_disabled',
         'avatar',
         'is_approved',
         'has_dashboard_access',
@@ -99,7 +100,16 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
             'can_use_contact_filters' => 'boolean',
             'is_banned' => 'boolean',
             'banned_at' => 'datetime',
+            'email_notifications_disabled' => 'boolean',
         ];
+    }
+
+    /**
+     * Служебные email-уведомления в панели (не верификация регистрации).
+     */
+    public function shouldReceiveMailNotifications(): bool
+    {
+        return SystemSetting::mailNotificationsEnabled() && ! $this->email_notifications_disabled;
     }
 
     protected function phone(): Attribute

@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Filament\Resources\ContactResource;
 use App\Filament\Support\PhoneDisplay;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Support\PhoneNumberHelper;
 use Filament\Actions\Action;
@@ -12,6 +13,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Facades\Filament;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Component;
@@ -198,6 +200,23 @@ class EditProfile extends BaseEditProfile
             ->maxLength(1000);
     }
 
+    protected function getEmailNotificationsToggleComponent(): Component
+    {
+        $mailEnabled = SystemSetting::mailNotificationsEnabled();
+
+        return Toggle::make('email_notifications_disabled')
+            ->label('Отключить рассылку уведомлений на email')
+            ->helperText(
+                $mailEnabled
+                    ? 'Служебные письма из панели (назначение контакта, предупреждения и т.д.) не будут приходить на вашу почту. Уведомления в колокольчике останутся.'
+                    : 'Рассылка уведомлений на email отключена администратором в настройках почтового сервера.'
+            )
+            ->default(false)
+            ->inline(false)
+            ->disabled(! $mailEnabled)
+            ->dehydrated($mailEnabled);
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -222,6 +241,11 @@ class EditProfile extends BaseEditProfile
                         $this->getBioFormComponent(),
                     ])
                     ->columns(2),
+
+                Section::make('Уведомления')
+                    ->schema([
+                        $this->getEmailNotificationsToggleComponent(),
+                    ]),
 
                 Section::make('Безопасность')
                     ->schema([

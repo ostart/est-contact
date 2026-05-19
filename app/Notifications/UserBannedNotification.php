@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\SystemSetting;
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -21,9 +21,10 @@ class UserBannedNotification extends Notification
     public function via(object $notifiable): array
     {
         $channels = ['database'];
-        if (SystemSetting::mailNotificationsEnabled()) {
+        if ($notifiable instanceof User && $notifiable->shouldReceiveMailNotifications()) {
             $channels[] = 'mail';
         }
+
         return $channels;
     }
 
