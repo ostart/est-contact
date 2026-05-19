@@ -17,7 +17,7 @@ class Contact extends Model
     use LogsActivity;
 
     protected $attributes = [
-        'source' => 'other',
+        'source' => 'temple',
     ];
 
     protected $fillable = [

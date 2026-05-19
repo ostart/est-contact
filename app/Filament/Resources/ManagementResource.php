@@ -104,7 +104,7 @@ class ManagementResource extends Resource
                         Components\Select::make('source')
                             ->label('Источник')
                             ->options(ContactSource::options())
-                            ->default(ContactSource::OTHER->value)
+                            ->default(ContactSource::TEMPLE->value)
                             ->required()
                             ->native(false),
                     ])->columns(2),
