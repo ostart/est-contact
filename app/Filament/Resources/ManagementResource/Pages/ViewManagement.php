@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ManagementResource\Pages;
 
 use App\Filament\Resources\ManagementResource;
+use App\Filament\Support\PhoneDisplay;
 use App\Enums\ContactStatus;
 use Filament\Actions;
 use Filament\Infolists\Components;
@@ -29,9 +30,11 @@ class ViewManagement extends ViewRecord
                     ->schema([
                         Components\TextEntry::make('full_name')
                             ->label('ФИО'),
-                        Components\TextEntry::make('phone')
-                            ->label('Телефон')
-                            ->copyable(),
+                        PhoneDisplay::textEntry(
+                            Components\TextEntry::make('phone')
+                                ->label('Телефон')
+                                ->copyable(),
+                        ),
                         Components\TextEntry::make('email')
                             ->label('Email')
                             ->copyable(),

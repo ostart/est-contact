@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ContactResource\Pages;
+use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
 use App\Support\PhoneNumberHelper;
 use BackedEnum;
@@ -56,14 +57,16 @@ class ContactResource extends Resource
                             ->required()
                             ->maxLength(255),
 
-                        Components\TextInput::make('phone')
-                            ->label('Телефон')
-                            ->tel()
-                            ->required()
-                            ->maxLength(32)
-                            ->rules([
-                                Rule::phone()->country(PhoneNumberHelper::CONTACT_REGIONS),
-                            ]),
+                        PhoneDisplay::textInput(
+                            Components\TextInput::make('phone')
+                                ->label('Телефон')
+                                ->tel()
+                                ->required()
+                                ->maxLength(32)
+                                ->rules([
+                                    Rule::phone()->country(PhoneNumberHelper::CONTACT_REGIONS),
+                                ]),
+                        ),
 
                         Components\TextInput::make('email')
                             ->label('Email')
@@ -168,12 +171,14 @@ class ContactResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Columns\TextColumn::make('phone')
-                    ->label('Телефон')
-                    ->searchable(query: function (Builder $query, string $search): void {
-                        PhoneNumberHelper::applyColumnSearch($query, 'phone', $search, PhoneNumberHelper::CONTACT_REGIONS);
-                    })
-                    ->copyable(),
+                PhoneDisplay::tableColumn(
+                    Columns\TextColumn::make('phone')
+                        ->label('Телефон')
+                        ->searchable(query: function (Builder $query, string $search): void {
+                            PhoneNumberHelper::applyColumnSearch($query, 'phone', $search, PhoneNumberHelper::CONTACT_REGIONS);
+                        })
+                        ->copyable(),
+                ),
 
                 Columns\TextColumn::make('email')
                     ->label('Email')

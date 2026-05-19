@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Resources\ContactResource;
+use App\Filament\Support\PhoneDisplay;
 use App\Models\User;
 use App\Support\PhoneNumberHelper;
 use Filament\Actions\Action;
@@ -148,33 +149,35 @@ class EditProfile extends BaseEditProfile
 
     protected function getPhoneFormComponent(): Component
     {
-        return TextInput::make('phone')
-            ->label('Телефон')
-            ->tel()
-            ->maxLength(32)
-            ->rules([
-                'nullable',
-                Rule::phone()->country([PhoneNumberHelper::DEFAULT_REGION]),
-            ])
-            ->rule(static function (): Closure {
-                return function (string $attribute, mixed $value, Closure $fail): void {
-                    if (! filled($value)) {
-                        return;
-                    }
-                    $e164 = PhoneNumberHelper::normalize($value, [PhoneNumberHelper::DEFAULT_REGION]);
-                    if ($e164 === null) {
-                        return;
-                    }
-                    $exists = User::query()
-                        ->where('phone', $e164)
-                        ->whereKeyNot(auth()->id())
-                        ->exists();
-                    if ($exists) {
-                        $fail('Этот номер телефона уже используется другим пользователем.');
-                    }
-                };
-            })
-            ->columnSpan(['default' => 'full', 'md' => 1]);
+        return PhoneDisplay::textInput(
+            TextInput::make('phone')
+                ->label('Телефон')
+                ->tel()
+                ->maxLength(32)
+                ->rules([
+                    'nullable',
+                    Rule::phone()->country([PhoneNumberHelper::DEFAULT_REGION]),
+                ])
+                ->rule(static function (): Closure {
+                    return function (string $attribute, mixed $value, Closure $fail): void {
+                        if (! filled($value)) {
+                            return;
+                        }
+                        $e164 = PhoneNumberHelper::normalize($value, [PhoneNumberHelper::DEFAULT_REGION]);
+                        if ($e164 === null) {
+                            return;
+                        }
+                        $exists = User::query()
+                            ->where('phone', $e164)
+                            ->whereKeyNot(auth()->id())
+                            ->exists();
+                        if ($exists) {
+                            $fail('Этот номер телефона уже используется другим пользователем.');
+                        }
+                    };
+                })
+                ->columnSpan(['default' => 'full', 'md' => 1]),
+        );
     }
 
     protected function getAddressFormComponent(): Component

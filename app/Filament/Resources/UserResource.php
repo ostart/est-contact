@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
+use App\Filament\Support\PhoneDisplay;
 use App\Models\User;
 use App\Models\UserWarning;
 use App\Support\PhoneNumberHelper;
@@ -77,33 +78,35 @@ class UserResource extends Resource
 
                 SchemaComponents\Section::make('Контактные данные')
                     ->schema([
-                        Components\TextInput::make('phone')
-                            ->label('Телефон')
-                            ->tel()
-                            ->maxLength(32)
-                            ->rules([
-                                'nullable',
-                                Rule::phone()->country([PhoneNumberHelper::DEFAULT_REGION]),
-                            ])
-                            ->rule(static function (Field $component): Closure {
-                                return function (string $attribute, mixed $value, Closure $fail) use ($component): void {
-                                    if (! filled($value)) {
-                                        return;
-                                    }
-                                    $e164 = PhoneNumberHelper::normalize($value, [PhoneNumberHelper::DEFAULT_REGION]);
-                                    if ($e164 === null) {
-                                        return;
-                                    }
-                                    $query = User::query()->where('phone', $e164);
-                                    $record = $component->getRecord();
-                                    if ($record && $record->getKey()) {
-                                        $query->whereKeyNot($record->getKey());
-                                    }
-                                    if ($query->exists()) {
-                                        $fail('Пользователь с таким номером телефона уже зарегистрирован.');
-                                    }
-                                };
-                            }),
+                        PhoneDisplay::textInput(
+                            Components\TextInput::make('phone')
+                                ->label('Телефон')
+                                ->tel()
+                                ->maxLength(32)
+                                ->rules([
+                                    'nullable',
+                                    Rule::phone()->country([PhoneNumberHelper::DEFAULT_REGION]),
+                                ])
+                                ->rule(static function (Field $component): Closure {
+                                    return function (string $attribute, mixed $value, Closure $fail) use ($component): void {
+                                        if (! filled($value)) {
+                                            return;
+                                        }
+                                        $e164 = PhoneNumberHelper::normalize($value, [PhoneNumberHelper::DEFAULT_REGION]);
+                                        if ($e164 === null) {
+                                            return;
+                                        }
+                                        $query = User::query()->where('phone', $e164);
+                                        $record = $component->getRecord();
+                                        if ($record && $record->getKey()) {
+                                            $query->whereKeyNot($record->getKey());
+                                        }
+                                        if ($query->exists()) {
+                                            $fail('Пользователь с таким номером телефона уже зарегистрирован.');
+                                        }
+                                    };
+                                }),
+                        ),
 
                         Components\Textarea::make('address')
                             ->label('Адрес')
@@ -231,7 +234,7 @@ class UserResource extends Resource
                                 $html .= '<p><strong>Email:</strong> ' . e($record->email) . '</p>';
                                 
                                 if ($record->phone) {
-                                    $html .= '<p><strong>Телефон:</strong> ' . e($record->phone) . '</p>';
+                                    $html .= '<p><strong>Телефон:</strong> '.PhoneDisplay::html($record->phone).'</p>';
                                 } else {
                                     $html .= '<p><strong>Телефон:</strong> <span style="color: #9ca3af;">не указан</span></p>';
                                 }

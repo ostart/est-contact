@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Filament\Resources\ContactResource;
+use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
 use App\Models\SystemSetting;
 use Filament\Actions\Action;
@@ -49,7 +50,7 @@ class ContactAssignedNotification extends Notification
             ->greeting('Здравствуйте, ' . $notifiable->name . '!')
             ->line('Вам назначен новый контакт для обработки.')
             ->line('**Контакт:** ' . $this->contact->full_name)
-            ->line('**Телефон:** ' . $this->contact->phone)
+            ->line('**Телефон:** '.PhoneDisplay::markdown($this->contact->phone))
             ->when($this->contact->email, fn($mail) => $mail->line('**Email:** ' . $this->contact->email))
             ->when($this->contact->district, fn($mail) => $mail->line('**Округ:** ' . $this->contact->district))
             ->action('Просмотреть контакт', ContactResource::getUrl('view', ['record' => $this->contact]))

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\ContactResource\Pages;
 use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ContactResource;
+use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
 use Filament\Actions;
 use Filament\Forms;
@@ -53,9 +54,11 @@ class ViewContact extends ViewRecord
                     ->schema([
                         Components\TextEntry::make('full_name')
                             ->label('ФИО'),
-                        Components\TextEntry::make('phone')
-                            ->label('Телефон')
-                            ->copyable(),
+                        PhoneDisplay::textEntry(
+                            Components\TextEntry::make('phone')
+                                ->label('Телефон')
+                                ->copyable(),
+                        ),
                         Components\TextEntry::make('email')
                             ->label('Email')
                             ->copyable(),

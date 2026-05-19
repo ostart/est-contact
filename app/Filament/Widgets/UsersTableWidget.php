@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Enums\ContactStatus;
+use App\Filament\Support\PhoneDisplay;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\ImageEntry;
@@ -94,7 +95,7 @@ class UsersTableWidget extends BaseWidget
                                 $html .= '<p><strong>Email:</strong> ' . e($record->email) . '</p>';
                                 
                                 if ($record->phone) {
-                                    $html .= '<p><strong>Телефон:</strong> ' . e($record->phone) . '</p>';
+                                    $html .= '<p><strong>Телефон:</strong> '.PhoneDisplay::html($record->phone).'</p>';
                                 } else {
                                     $html .= '<p><strong>Телефон:</strong> <span style="color: #9ca3af;">не указан</span></p>';
                                 }
