@@ -74,7 +74,7 @@ class ContactResource extends Resource
                             ->maxLength(255),
 
                         Components\TextInput::make('district')
-                            ->label('Округ')
+                            ->label('Район')
                             ->maxLength(255),
 
                         Components\Select::make('source')
@@ -187,7 +187,7 @@ class ContactResource extends Resource
                     ->copyable(),
 
                 Columns\TextColumn::make('district')
-                    ->label('Округ')
+                    ->label('Район')
                     ->searchable()
                     ->toggleable(),
 
@@ -261,7 +261,7 @@ class ContactResource extends Resource
                         ->default($isLeader),
 
                     Tables\Filters\SelectFilter::make('district')
-                        ->label('Округ')
+                        ->label('Район')
                         ->options(fn () => Contact::distinct()->pluck('district', 'district')->filter()),
                 ]);
         }

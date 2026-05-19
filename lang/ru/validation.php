@@ -187,7 +187,7 @@ return [
         'deleted_at'               => 'удалено в',
         'description'              => 'описание',
         'display_type'             => 'тип отображения',
-        'district'                 => 'округ',
+        'district'                 => 'район',
         'duration'                 => 'продолжительность',
         'email'                    => 'email адрес',
         'excerpt'                  => 'выдержка',

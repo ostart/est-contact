@@ -39,7 +39,7 @@ class ViewManagement extends ViewRecord
                             ->label('Email')
                             ->copyable(),
                         Components\TextEntry::make('district')
-                            ->label('Округ'),
+                            ->label('Район'),
                         Components\TextEntry::make('status')
                             ->label('Статус')
                             ->badge()

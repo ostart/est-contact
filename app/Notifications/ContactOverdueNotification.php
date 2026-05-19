@@ -43,7 +43,7 @@ class ContactOverdueNotification extends Notification
             ->line('**Контакт:** ' . $this->contact->full_name)
             ->line('**Телефон:** '.PhoneDisplay::markdown($this->contact->phone))
             ->when($this->contact->email, fn ($mail) => $mail->line('**Email:** ' . $this->contact->email))
-            ->when($this->contact->district, fn ($mail) => $mail->line('**Округ:** ' . $this->contact->district))
+            ->when($this->contact->district, fn ($mail) => $mail->line('**Район:** ' . $this->contact->district))
             ->action('Просмотреть контакт', ContactResource::getUrl('view', ['record' => $this->contact]))
             ->line('Спасибо за использование нашего приложения!');
     }

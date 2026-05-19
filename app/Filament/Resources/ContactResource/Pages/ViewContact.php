@@ -63,7 +63,7 @@ class ViewContact extends ViewRecord
                             ->label('Email')
                             ->copyable(),
                         Components\TextEntry::make('district')
-                            ->label('Округ'),
+                            ->label('Район'),
                         Components\TextEntry::make('source')
                             ->label('Источник')
                             ->formatStateUsing(fn ($state) => $state->getLabel()),
