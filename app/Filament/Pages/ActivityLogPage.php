@@ -2,12 +2,17 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Contact;
+use App\Models\SystemSetting;
+use App\Models\User;
+use App\Models\UserWarning;
 use App\Support\PhoneNumberHelper;
 use Filament\Pages\Page;
 use Filament\Panel;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Activitylog\Models\Activity;
@@ -65,7 +70,7 @@ class ActivityLogPage extends Page implements HasTable
                     })
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         return $query->where(function (Builder $q) use ($search) {
-                            $q->whereHasMorph('subject', [\App\Models\Contact::class], function (Builder $q) use ($search) {
+                            $q->whereHasMorph('subject', [Contact::class], function (Builder $q) use ($search) {
                                 $q->where(function (Builder $inner) use ($search) {
                                     $inner->where('full_name', 'like', '%'.addcslashes($search, '%_\\').'%');
                                     $inner->orWhere(function (Builder $phoneQ) use ($search) {
@@ -78,7 +83,7 @@ class ActivityLogPage extends Page implements HasTable
                                     });
                                 });
                             })
-                            ->orWhereHasMorph('subject', [\App\Models\User::class], function (Builder $q) use ($search) {
+                            ->orWhereHasMorph('subject', [User::class], function (Builder $q) use ($search) {
                                 $q->where(function (Builder $inner) use ($search) {
                                     $inner->where('name', 'like', '%'.addcslashes($search, '%_\\').'%')
                                         ->orWhere('email', 'like', '%'.addcslashes($search, '%_\\').'%');
@@ -92,8 +97,26 @@ class ActivityLogPage extends Page implements HasTable
                                     });
                                 });
                             })
-                            ->orWhereHasMorph('subject', [\App\Models\SystemSetting::class], function (Builder $q) use ($search) {
+                            ->orWhereHasMorph('subject', [SystemSetting::class], function (Builder $q) use ($search) {
                                 $q->where('key', 'like', '%'.addcslashes($search, '%_\\').'%');
+                            })
+                            ->orWhereHasMorph('subject', [UserWarning::class], function (Builder $q) use ($search) {
+                                $like = '%'.addcslashes($search, '%_\\').'%';
+                                $q->where('message', 'like', $like)
+                                    ->orWhereHas('user', function (Builder $userQuery) use ($search, $like) {
+                                        $userQuery->where(function (Builder $inner) use ($like, $search) {
+                                            $inner->where('name', 'like', $like)
+                                                ->orWhere('email', 'like', $like);
+                                            $inner->orWhere(function (Builder $phoneQ) use ($search) {
+                                                PhoneNumberHelper::applyColumnSearch(
+                                                    $phoneQ,
+                                                    'phone',
+                                                    $search,
+                                                    [PhoneNumberHelper::DEFAULT_REGION]
+                                                );
+                                            });
+                                        });
+                                    });
                             });
                         });
                     }),
@@ -215,6 +238,26 @@ class ActivityLogPage extends Page implements HasTable
                     ->sortable()
                     ->since()
                     ->description(fn ($record) => format_datetime_moscow($record->created_at)),
+            ])
+            ->filters([
+                SelectFilter::make('subject_type')
+                    ->label('Модель')
+                    ->options([
+                        Contact::class => 'Контакт',
+                        User::class => 'Пользователь',
+                        SystemSetting::class => 'Настройка',
+                        UserWarning::class => 'Предупреждение',
+                    ])
+                    ->native(false),
+
+                SelectFilter::make('event')
+                    ->label('Событие')
+                    ->options([
+                        'created' => 'Создано',
+                        'updated' => 'Обновлено',
+                        'deleted' => 'Удалено',
+                    ])
+                    ->native(false),
             ])
             ->defaultSort('created_at', 'desc')
             ->paginated([10, 25, 50, 100])
