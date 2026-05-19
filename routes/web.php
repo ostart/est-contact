@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\YandexMapController;
 use App\Http\Controllers\VerifyEmailController;
 
 // Редирект с главной страницы на форму входа
@@ -36,6 +37,10 @@ Route::get('/admin/verify-email/{id}/{hash}', VerifyEmailController::class)
 
 // Страницы ожидания подтверждения
 Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/map', YandexMapController::class)
+        ->middleware(\App\Http\Middleware\EnsureUserIsApproved::class)
+        ->name('map.embed');
+
     Route::get('/approval/pending', [ApprovalController::class, 'pending'])->name('approval.pending');
     Route::post('/approval/logout', [ApprovalController::class, 'logout'])->name('approval.logout');
 

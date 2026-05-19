@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ManagementResource\Pages;
 
 use App\Filament\Resources\ManagementResource;
+use App\Filament\Support\YandexMapAction;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Enums\IconSize;
@@ -15,6 +16,7 @@ class ListManagement extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            YandexMapAction::make(),
             Actions\CreateAction::make()
                 ->label('Создать')
                 ->icon('heroicon-o-user-plus')

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ContactResource\Pages;
 
 use App\Filament\Resources\ContactResource;
+use App\Filament\Support\YandexMapAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListContacts extends ListRecords
@@ -11,6 +12,8 @@ class ListContacts extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            YandexMapAction::make(),
+        ];
     }
 }
