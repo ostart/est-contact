@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Enums\ContactStatus;
 use App\Filament\Support\PhoneDisplay;
 use App\Models\User;
+use App\Support\UserModerationActivity;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -13,7 +14,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 
@@ -56,12 +56,7 @@ class UsersTableWidget extends BaseWidget
                         'warnings as warnings_count',
                     ])
                     ->addSelect([
-                        'bans_count' => DB::table('activity_log')
-                            ->selectRaw('COUNT(*)')
-                            ->whereColumn('activity_log.subject_id', 'users.id')
-                            ->where('activity_log.subject_type', User::class)
-                            ->where('activity_log.event', 'updated')
-                            ->whereRaw("JSON_EXTRACT(activity_log.properties, '$.attributes.is_banned') = true"),
+                        'bans_count' => UserModerationActivity::banCountSubquery(),
                     ])
             )
             ->columns([

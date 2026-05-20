@@ -4,16 +4,12 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Support\PhoneDisplay;
+use App\Filament\Support\UserActionsSection;
 use App\Models\User;
-use App\Models\UserWarning;
 use App\Support\PhoneNumberHelper;
-use App\Notifications\UserBannedNotification;
-use App\Notifications\UserUnbannedNotification;
-use App\Notifications\UserWarningNotification;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components as SchemaComponents;
 use Filament\Schemas\Schema;
@@ -170,33 +166,14 @@ class UserResource extends Resource
                                 }
                             }),
 
-                        Components\Toggle::make('is_banned')
-                            ->label('Заблокирован')
-                            ->default(false)
-                            ->live()
-                            ->disabled(fn (?User $record) => $record?->isSuperAdmin() ?? false)
-                            ->helperText(fn (?User $record) => $record?->isSuperAdmin()
-                                ? 'Суперадминистратора нельзя заблокировать.'
-                                : null)
-                            ->afterStateUpdated(function ($state, $record) {
-                                if ($record?->isSuperAdmin()) {
-                                    return;
-                                }
-                                if ($record) {
-                                    $record->banned_at = $state ? now() : null;
-                                    if (!$state) {
-                                        $record->ban_reason = null;
-                                    }
-                                    $record->save();
-                                }
-                            }),
-
-                        Components\Textarea::make('ban_reason')
-                            ->label('Причина блокировки')
-                            ->visible(fn ($get) => $get('is_banned'))
-                            ->maxLength(1000)
-                            ->rows(2),
                     ])->columns(2),
+
+                SchemaComponents\Section::make('Действия')
+                    ->schema([
+                        SchemaComponents\Actions::make(UserActionsSection::editFormActions())
+                            ->columnSpanFull(),
+                    ])
+                    ->visibleOn('edit'),
             ]);
     }
 
@@ -341,6 +318,9 @@ class UserResource extends Resource
                     ->color('warning')
                     ->iconButton()
                     ->tooltip('Отправить предупреждение')
+                    ->requiresConfirmation()
+                    ->modalHeading('Отправить предупреждение')
+                    ->modalDescription(fn (User $record) => "Пользователь {$record->name} получит уведомление в колокольчик и на email (если включено в настройках).")
                     ->form([
                         Components\Textarea::make('message')
                             ->label('Текст предупреждения')
@@ -349,21 +329,7 @@ class UserResource extends Resource
                             ->rows(3)
                             ->placeholder('Введите текст предупреждения для пользователя...'),
                     ])
-                    ->action(function (User $record, array $data) {
-                        UserWarning::create([
-                            'user_id' => $record->id,
-                            'warned_by' => auth()->id(),
-                            'message' => $data['message'],
-                        ]);
-
-                        $record->notify(new UserWarningNotification($data['message']));
-
-                        Notification::make()
-                            ->success()
-                            ->title('Предупреждение отправлено')
-                            ->body("Пользователь {$record->name} получит уведомление в колокольчик и на email.")
-                            ->send();
-                    }),
+                    ->action(fn (User $record, array $data) => UserActionsSection::sendWarning($record, $data['message'])),
 
                 Actions\Action::make('ban')
                     ->label('Заблокировать')
@@ -382,31 +348,7 @@ class UserResource extends Resource
                             ->rows(2)
                             ->placeholder('Укажите причину блокировки (необязательно)...'),
                     ])
-                    ->action(function (User $record, array $data) {
-                        if ($record->isSuperAdmin()) {
-                            Notification::make()
-                                ->danger()
-                                ->title('Действие недоступно')
-                                ->body('Суперадминистратора нельзя заблокировать.')
-                                ->send();
-
-                            return;
-                        }
-
-                        $record->update([
-                            'is_banned' => true,
-                            'ban_reason' => $data['ban_reason'] ?? null,
-                            'banned_at' => now(),
-                        ]);
-
-                        $record->notify(new UserBannedNotification($data['ban_reason'] ?? null));
-
-                        Notification::make()
-                            ->success()
-                            ->title('Пользователь заблокирован')
-                            ->body("Пользователь {$record->name} был заблокирован. Уведомление отправлено.")
-                            ->send();
-                    }),
+                    ->action(fn (User $record, array $data) => UserActionsSection::banUser($record, $data['ban_reason'] ?? null)),
 
                 Actions\Action::make('unban')
                     ->label('Разблокировать')
@@ -418,21 +360,7 @@ class UserResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Разблокировать пользователя')
                     ->modalDescription(fn (User $record) => "Вы уверены, что хотите разблокировать пользователя {$record->name}?")
-                    ->action(function (User $record) {
-                        $record->update([
-                            'is_banned' => false,
-                            'ban_reason' => null,
-                            'banned_at' => null,
-                        ]);
-
-                        $record->notify(new UserUnbannedNotification());
-
-                        Notification::make()
-                            ->success()
-                            ->title('Пользователь разблокирован')
-                            ->body("Пользователь {$record->name} был разблокирован. Уведомление отправлено.")
-                            ->send();
-                    }),
+                    ->action(fn (User $record) => UserActionsSection::unbanUser($record)),
 
                 Actions\EditAction::make()
                     ->iconButton()
