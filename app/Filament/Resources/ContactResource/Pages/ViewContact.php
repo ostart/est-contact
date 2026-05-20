@@ -35,18 +35,17 @@ class ViewContact extends ViewRecord
         
         // Лидер может изменять статус если:
         // 1. Контакт NOT_PROCESSED (может взять в работу)
-        // 2. Он назначен ответственным и контакт не в финальном статусе
-        $canEditStatus = $isLeader && ($isNotProcessed || ($isAssignedToCurrentUser && !$status->isFinal()));
+        // 2. Он назначен ответственным (включая финальные — переоткрытие или смена результата)
+        $canEditStatus = $isLeader && ($isNotProcessed || $isAssignedToCurrentUser);
 
-        // Список доступных статусов зависит от текущего статуса
-        $availableStatuses = $isNotProcessed 
-            ? [ContactStatus::ASSIGNED->value => 'Взять в работу'] // Для NOT_PROCESSED - дружелюбный текст
-            : [ // Для своих контактов - все кроме OVERDUE
-                ContactStatus::NOT_PROCESSED->value => ContactStatus::NOT_PROCESSED->getLabel(),
-                ContactStatus::ASSIGNED->value => ContactStatus::ASSIGNED->getLabel(),
-                ContactStatus::SUCCESS->value => ContactStatus::SUCCESS->getLabel(),
-                ContactStatus::FAILED->value => ContactStatus::FAILED->getLabel(),
-            ];
+        $availableStatuses = $isNotProcessed
+            ? [ContactStatus::ASSIGNED->value => 'Взять в работу']
+            : collect($status->transitionOptions(includeCurrent: false))
+                ->when(
+                    ! $status->isFinal(),
+                    fn ($options) => $options->except([ContactStatus::OVERDUE->value]),
+                )
+                ->all();
 
         return $schema
             ->components([

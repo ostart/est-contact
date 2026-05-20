@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ManagementResource\Pages;
+use App\Filament\Support\ContactCommentsSection;
 use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
 use App\Support\PhoneNumberHelper;
@@ -114,29 +115,12 @@ class ManagementResource extends Resource
 
                 SchemaComponents\Section::make('Комментарии')
                     ->schema([
-                        Components\Repeater::make('comments')
-                            ->label('')
-                            ->relationship()
-                            ->schema([
-                                Components\Placeholder::make('user_name')
-                                    ->label('Автор')
-                                    ->content(fn ($record) => $record?->user?->name ?? '—')
-                                    ->visibleOn('edit'),
+                        ContactCommentsSection::commentsRepeater(),
 
-                                Components\Textarea::make('comment')
-                                    ->label('Комментарий')
-                                    ->required()
-                                    ->rows(3)
-                                    ->columnSpanFull(),
-
-                                Components\Hidden::make('user_id')
-                                    ->default(fn () => auth()->id()),
-                            ])
-                            ->addActionLabel('Добавить комментарий')
-                            ->deletable(true)
-                            ->reorderable(false)
-                            ->defaultItems(0)
-                            ->columnSpanFull(),
+                        SchemaComponents\Actions::make([
+                            ContactCommentsSection::addCommentAction(),
+                        ])
+                            ->visibleOn('edit'),
                     ])
                     ->collapsible(),
 
@@ -144,16 +128,15 @@ class ManagementResource extends Resource
                     ->schema([
                         Components\Select::make('status')
                             ->label('Статус')
-                            ->options([
-                                ContactStatus::NOT_PROCESSED->value => ContactStatus::NOT_PROCESSED->getLabel(),
-                                ContactStatus::ASSIGNED->value => ContactStatus::ASSIGNED->getLabel(),
-                                ContactStatus::OVERDUE->value => ContactStatus::OVERDUE->getLabel(),
-                                ContactStatus::SUCCESS->value => ContactStatus::SUCCESS->getLabel(),
-                                ContactStatus::FAILED->value => ContactStatus::FAILED->getLabel(),
-                            ])
+                            ->options(function (?Contact $record): array {
+                                $current = $record?->status instanceof ContactStatus
+                                    ? $record->status
+                                    : ($record ? ContactStatus::tryFrom((string) $record->status) : null);
+
+                                return ContactStatus::formOptions($current, forManager: true);
+                            })
                             ->required()
                             ->default(ContactStatus::NOT_PROCESSED->value)
-                            ->disabled(fn ($record) => $record && (($record->status instanceof ContactStatus ? $record->status : ContactStatus::from($record->status))->isFinal()))
                             ->live()
                             ->afterStateUpdated(function (?string $state, Set $set) {
                                 if ($state === ContactStatus::NOT_PROCESSED->value) {

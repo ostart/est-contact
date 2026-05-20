@@ -34,6 +34,85 @@ enum ContactStatus: string
 
     public function isFinal(): bool
     {
-        return in_array($this, [self::SUCCESS, self::FAILED]);
+        return in_array($this, [self::SUCCESS, self::FAILED], true);
+    }
+
+    /**
+     * @return list<self>
+     */
+    public function allowedTransitions(bool $forManager = false): array
+    {
+        if ($this->isFinal()) {
+            $targets = [self::NOT_PROCESSED, self::SUCCESS, self::FAILED];
+            if ($forManager) {
+                $targets[] = self::ASSIGNED;
+            }
+
+            return array_values(array_filter(
+                $targets,
+                fn (self $status) => $status !== $this,
+            ));
+        }
+
+        return match ($this) {
+            self::NOT_PROCESSED => [self::ASSIGNED],
+            self::ASSIGNED, self::OVERDUE => [self::NOT_PROCESSED, self::ASSIGNED, self::SUCCESS, self::FAILED],
+            default => [],
+        };
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function transitionOptions(bool $forManager = false, bool $includeCurrent = true): array
+    {
+        $options = [];
+        foreach ($this->allowedTransitions($forManager) as $status) {
+            $options[$status->value] = $status->getLabel();
+        }
+
+        if ($includeCurrent) {
+            $options = [$this->value => $this->getLabel()] + $options;
+        }
+
+        if ($forManager && $this === self::ASSIGNED) {
+            $options[self::OVERDUE->value] = self::OVERDUE->getLabel();
+        }
+
+        return $options;
+    }
+
+    public function canTransitionTo(self $target, bool $forManager = false, bool $system = false): bool
+    {
+        if ($this === $target) {
+            return true;
+        }
+
+        if ($system) {
+            return $this === self::ASSIGNED && $target === self::OVERDUE;
+        }
+
+        if ($forManager && $this === self::ASSIGNED && $target === self::OVERDUE) {
+            return true;
+        }
+
+        return in_array($target, $this->allowedTransitions($forManager), true);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function formOptions(?self $current = null, bool $forManager = true): array
+    {
+        if ($current === null) {
+            $options = [];
+            foreach (self::cases() as $status) {
+                $options[$status->value] = $status->getLabel();
+            }
+
+            return $options;
+        }
+
+        return $current->transitionOptions($forManager);
     }
 }

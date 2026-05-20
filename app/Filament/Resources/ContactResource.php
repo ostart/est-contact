@@ -88,16 +88,15 @@ class ContactResource extends Resource
                     ->schema([
                         Components\Select::make('status')
                             ->label('Статус')
-                            ->options([
-                                ContactStatus::NOT_PROCESSED->value => ContactStatus::NOT_PROCESSED->getLabel(),
-                                ContactStatus::ASSIGNED->value => ContactStatus::ASSIGNED->getLabel(),
-                                ContactStatus::OVERDUE->value => ContactStatus::OVERDUE->getLabel(),
-                                ContactStatus::SUCCESS->value => ContactStatus::SUCCESS->getLabel(),
-                                ContactStatus::FAILED->value => ContactStatus::FAILED->getLabel(),
-                            ])
+                            ->options(function (?Contact $record): array {
+                                $current = $record?->status instanceof ContactStatus
+                                    ? $record->status
+                                    : ($record ? ContactStatus::tryFrom((string) $record->status) : null);
+
+                                return ContactStatus::formOptions($current, forManager: true);
+                            })
                             ->required()
                             ->default(ContactStatus::NOT_PROCESSED->value)
-                            ->disabled(fn ($record) => $record && (($record->status instanceof ContactStatus ? $record->status : ContactStatus::from($record->status))->isFinal()))
                             ->live()
                             ->afterStateUpdated(function (?string $state, Set $set) {
                                 if ($state === ContactStatus::NOT_PROCESSED->value) {

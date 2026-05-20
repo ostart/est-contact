@@ -8,6 +8,7 @@ use App\Models\ContactStatusHistory;
 use App\Notifications\ContactAssignedNotification;
 use App\Notifications\ContactOverdueNotification;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 
 class ContactObserver
 {
@@ -33,6 +34,21 @@ class ContactObserver
     {
         // Проверяем изменение статуса (created_at явно в UTC)
         if ($contact->isDirty('status')) {
+            $oldStatus = ContactStatus::tryFrom((string) $contact->getOriginal('status'));
+            $newStatus = $contact->status instanceof ContactStatus
+                ? $contact->status
+                : ContactStatus::from($contact->status);
+
+            if ($oldStatus && ! $oldStatus->canTransitionTo(
+                $newStatus,
+                forManager: auth()->user()?->hasAnyRole(['manager', 'administrator', 'superadmin']) ?? false,
+                system: app()->runningInConsole(),
+            )) {
+                throw ValidationException::withMessages([
+                    'status' => 'Недопустимый переход статуса.',
+                ]);
+            }
+
             ContactStatusHistory::create([
                 'contact_id' => $contact->id,
                 'user_id' => auth()->id(), // null при смене статуса из консоли (например, contacts:check-overdue)
