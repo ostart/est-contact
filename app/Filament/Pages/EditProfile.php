@@ -50,25 +50,7 @@ class EditProfile extends BaseEditProfile
 
     protected function getHomeUrl(): string
     {
-        $user = auth()->user();
-
-        if ($user->has_dashboard_access) {
-            return Filament::getUrl();
-        }
-
-        if ($user->hasRole('leader')) {
-            return ContactResource::getUrl('index');
-        }
-
-        if ($user->hasRole('manager')) {
-            return \App\Filament\Resources\ManagementResource::getUrl('index');
-        }
-
-        if ($user->hasRole('superadmin')) {
-            return \App\Filament\Resources\UserResource::getUrl('index');
-        }
-
-        return Filament::getUrl();
+        return auth()->user()->getFilamentHomeUrl();
     }
 
     protected function getNameFormComponent(): Component

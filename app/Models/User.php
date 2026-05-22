@@ -2,8 +2,12 @@
 
 namespace App\Models;
 
+use App\Filament\Resources\ContactResource;
+use App\Filament\Resources\ManagementResource;
+use App\Filament\Resources\UserResource;
 use App\Notifications\VerifyEmail as AppVerifyEmail;
 use App\Support\PhoneNumberHelper;
+use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasAvatar;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -156,6 +160,27 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
         // Разрешаем вход всем пользователям — редирект на нужную страницу сделает middleware
         // (pending для неподтверждённых админом, email-verification для неверифицированного email)
         return true;
+    }
+
+    public function getFilamentHomeUrl(): string
+    {
+        if ($this->has_dashboard_access) {
+            return Filament::getPanel('admin')->getUrl();
+        }
+
+        if ($this->hasRole('leader')) {
+            return ContactResource::getUrl('index');
+        }
+
+        if ($this->hasRole('manager')) {
+            return ManagementResource::getUrl('index');
+        }
+
+        if ($this->hasRole('superadmin')) {
+            return UserResource::getUrl('index');
+        }
+
+        return Filament::getPanel('admin')->getUrl();
     }
 
     public function createdContacts(): HasMany

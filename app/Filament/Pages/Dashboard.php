@@ -15,4 +15,20 @@ class Dashboard extends BaseDashboard
     {
         return static::canAccess();
     }
+
+    public function mount(): void
+    {
+        if (! auth()->user()->has_dashboard_access) {
+            $this->redirect(auth()->user()->getFilamentHomeUrl());
+        }
+    }
+
+    public function mountCanAuthorizeAccess(): void
+    {
+        if (! auth()->user()->has_dashboard_access) {
+            return;
+        }
+
+        abort_unless(static::canAccess(), 403);
+    }
 }

@@ -35,6 +35,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->font('Inter')
             ->brandName('БВ Контакт')
+            ->homeUrl(fn (): ?string => auth()->check() ? auth()->user()->getFilamentHomeUrl() : null)
             ->defaultThemeMode(ThemeMode::Light)
             ->favicon(asset('favicon.ico'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
