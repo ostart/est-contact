@@ -42,4 +42,30 @@ class ContactStatusTest extends TestCase
             ContactStatus::ASSIGNED->canTransitionTo(ContactStatus::OVERDUE, system: true),
         );
     }
+
+    public function test_assigned_can_freeze_and_frozen_can_return_to_work(): void
+    {
+        $this->assertContains(ContactStatus::FROZEN, ContactStatus::ASSIGNED->allowedTransitions());
+        $this->assertSame([ContactStatus::ASSIGNED], ContactStatus::FROZEN->allowedTransitions());
+        $this->assertSame([ContactStatus::ASSIGNED], ContactStatus::FROZEN->allowedTransitions(forManager: true));
+        $this->assertTrue(ContactStatus::ASSIGNED->canTransitionTo(ContactStatus::FROZEN));
+        $this->assertTrue(ContactStatus::FROZEN->canTransitionTo(ContactStatus::ASSIGNED));
+        $this->assertFalse(ContactStatus::FROZEN->canTransitionTo(ContactStatus::SUCCESS, forManager: true));
+        $this->assertFalse(ContactStatus::OVERDUE->canTransitionTo(ContactStatus::FROZEN));
+    }
+
+    public function test_system_can_unfreeze_contact(): void
+    {
+        $this->assertTrue(
+            ContactStatus::FROZEN->canTransitionTo(ContactStatus::ASSIGNED, system: true),
+        );
+    }
+
+    public function test_frozen_unfreeze_label(): void
+    {
+        $this->assertSame(
+            'Вернуть в работу',
+            ContactStatus::ASSIGNED->getTransitionLabel(ContactStatus::FROZEN),
+        );
+    }
 }

@@ -50,6 +50,9 @@ class UsersTableWidget extends BaseWidget
                         'assignedContacts as in_progress_contacts' => function (Builder $query) {
                             $query->where('status', ContactStatus::ASSIGNED->value);
                         },
+                        'assignedContacts as frozen_contacts' => function (Builder $query) {
+                            $query->where('status', ContactStatus::FROZEN->value);
+                        },
                         'assignedContacts as overdue_contacts' => function (Builder $query) {
                             $query->where('status', ContactStatus::OVERDUE->value);
                         },
@@ -170,6 +173,13 @@ class UsersTableWidget extends BaseWidget
                     ->alignCenter()
                     ->badge()
                     ->color('info'),
+
+                TextColumn::make('frozen_contacts')
+                    ->label('Заморожено')
+                    ->sortable()
+                    ->alignCenter()
+                    ->badge()
+                    ->color('primary'),
 
                 TextColumn::make('overdue_contacts')
                     ->label('Просрочено')

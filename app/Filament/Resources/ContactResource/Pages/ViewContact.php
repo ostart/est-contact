@@ -5,6 +5,7 @@ namespace App\Filament\Resources\ContactResource\Pages;
 use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ContactResource;
+use App\Filament\Support\ContactFreezeFields;
 use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
 use Filament\Actions;
@@ -71,6 +72,10 @@ class ViewContact extends ViewRecord
                             ->badge()
                             ->formatStateUsing(fn ($state) => $state->getLabel())
                             ->color(fn ($state) => $state->getColor()),
+                        Components\TextEntry::make('frozen_until')
+                            ->label('Разморозить')
+                            ->formatStateUsing(fn ($state) => ContactFreezeFields::formatFrozenUntilDisplay($state))
+                            ->visible(fn () => $status === ContactStatus::FROZEN),
                         Components\TextEntry::make('assignedLeader.name')
                             ->label('Ответственный лидер'),
                         Components\TextEntry::make('creator.name')
@@ -171,10 +176,30 @@ class ViewContact extends ViewRecord
                                             Forms\Components\Select::make('status')
                                                 ->label('Новый статус')
                                                 ->options($availableStatuses)
-                                                ->default(fn () => $this->record->status instanceof ContactStatus ? $this->record->status->value : $this->record->status)
-                                                ->required(),
+                                                ->default(fn () => $status === ContactStatus::FROZEN
+                                                    ? ContactStatus::ASSIGNED->value
+                                                    : ($this->record->status instanceof ContactStatus ? $this->record->status->value : $this->record->status))
+                                                ->required()
+                                                ->live(),
+                                            ...ContactFreezeFields::schema(),
                                         ])
-                                        ->action(function (array $data) use ($isNotProcessed) {
+                                        ->action(function (array $data) use ($isNotProcessed, $status) {
+                                            if (
+                                                $data['status'] === ContactStatus::FROZEN->value
+                                                && $status !== ContactStatus::FROZEN
+                                            ) {
+                                                ContactFreezeFields::applyFreeze($this->record, $data);
+
+                                                Notification::make()
+                                                    ->title('Статус обновлен')
+                                                    ->success()
+                                                    ->send();
+
+                                                $this->redirect(static::getResource()::getUrl('view', ['record' => $this->record]));
+
+                                                return;
+                                            }
+
                                             $updateData = ['status' => $data['status']];
                                             
                                             if ($data['status'] === ContactStatus::NOT_PROCESSED->value) {

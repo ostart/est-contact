@@ -28,6 +28,7 @@ class ContactsStatsWidget extends BaseWidget
         $total = Contact::count();
         $awaiting = Contact::where('status', ContactStatus::NOT_PROCESSED)->count();
         $inProgress = Contact::where('status', ContactStatus::ASSIGNED)->count();
+        $frozen = Contact::where('status', ContactStatus::FROZEN)->count();
         $overdue = Contact::where('status', ContactStatus::OVERDUE)->count();
         $success = Contact::where('status', ContactStatus::SUCCESS)->count();
         $failed = Contact::where('status', ContactStatus::FAILED)->count();
@@ -63,6 +64,12 @@ class ContactsStatsWidget extends BaseWidget
                 ->descriptionIcon('heroicon-m-arrow-path')
                 ->color('info')
                 ->icon('heroicon-o-cog-6-tooth'),
+
+            Stat::make('Заморожено', number_format($frozen, 0, ',', ' '))
+                ->description($total > 0 ? round(($frozen / $total) * 100, 1) . '%' : '0%')
+                ->descriptionIcon('heroicon-m-pause')
+                ->color('primary')
+                ->icon('heroicon-o-pause-circle'),
 
             Stat::make('Просрочено', number_format($overdue, 0, ',', ' '))
                 ->description($overdueRate . '%')

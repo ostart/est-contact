@@ -7,6 +7,7 @@ enum ContactStatus: string
     case NOT_PROCESSED = 'not_processed';
     case ASSIGNED = 'assigned';
     case OVERDUE = 'overdue';
+    case FROZEN = 'frozen';
     case SUCCESS = 'success';
     case FAILED = 'failed';
 
@@ -16,6 +17,7 @@ enum ContactStatus: string
             self::NOT_PROCESSED => 'Не обработан',
             self::ASSIGNED => 'Назначен исполнитель',
             self::OVERDUE => 'Просрочен',
+            self::FROZEN => 'Заморожен',
             self::SUCCESS => 'Передан на БВ',
             self::FAILED => 'Обработан неуспешно',
         };
@@ -27,6 +29,7 @@ enum ContactStatus: string
             self::NOT_PROCESSED => 'gray',
             self::ASSIGNED => 'info',
             self::OVERDUE => 'warning',
+            self::FROZEN => 'primary',
             self::SUCCESS => 'success',
             self::FAILED => 'danger',
         };
@@ -56,7 +59,9 @@ enum ContactStatus: string
 
         return match ($this) {
             self::NOT_PROCESSED => [self::ASSIGNED],
-            self::ASSIGNED, self::OVERDUE => [self::NOT_PROCESSED, self::ASSIGNED, self::SUCCESS, self::FAILED],
+            self::ASSIGNED => [self::NOT_PROCESSED, self::FROZEN, self::SUCCESS, self::FAILED],
+            self::FROZEN => [self::ASSIGNED],
+            self::OVERDUE => [self::NOT_PROCESSED, self::ASSIGNED, self::SUCCESS, self::FAILED],
             default => [],
         };
     }
@@ -68,7 +73,7 @@ enum ContactStatus: string
     {
         $options = [];
         foreach ($this->allowedTransitions($forManager) as $status) {
-            $options[$status->value] = $status->getLabel();
+            $options[$status->value] = $status->getTransitionLabel($this);
         }
 
         if ($includeCurrent) {
@@ -82,6 +87,15 @@ enum ContactStatus: string
         return $options;
     }
 
+    public function getTransitionLabel(?self $from = null): string
+    {
+        if ($from === self::FROZEN && $this === self::ASSIGNED) {
+            return 'Вернуть в работу';
+        }
+
+        return $this->getLabel();
+    }
+
     public function canTransitionTo(self $target, bool $forManager = false, bool $system = false): bool
     {
         if ($this === $target) {
@@ -89,7 +103,8 @@ enum ContactStatus: string
         }
 
         if ($system) {
-            return $this === self::ASSIGNED && $target === self::OVERDUE;
+            return ($this === self::ASSIGNED && $target === self::OVERDUE)
+                || ($this === self::FROZEN && $target === self::ASSIGNED);
         }
 
         if ($forManager && $this === self::ASSIGNED && $target === self::OVERDUE) {

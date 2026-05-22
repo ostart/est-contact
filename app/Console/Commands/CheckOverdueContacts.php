@@ -21,13 +21,22 @@ class CheckOverdueContacts extends Command
      *
      * @var string
      */
-    protected $description = 'Check and mark overdue contacts';
+    protected $description = 'Unfreeze expired contacts and mark overdue ones';
 
-    /**
-     * Execute the console command.
-     */
-    public function handle()
+    public function handle(): int
     {
+        $unfrozen = 0;
+        $frozenContacts = Contact::query()
+            ->where('status', ContactStatus::FROZEN->value)
+            ->whereNotNull('frozen_until')
+            ->where('frozen_until', '<=', now())
+            ->get();
+
+        foreach ($frozenContacts as $contact) {
+            $contact->update(['status' => ContactStatus::ASSIGNED]);
+            $unfrozen++;
+        }
+
         $timeout = (int) SystemSetting::get('contact_processing_timeout_days', 30);
         $cutoffDate = now()->subDays($timeout);
 
@@ -38,14 +47,15 @@ class CheckOverdueContacts extends Command
             })
             ->get();
 
-        $count = 0;
+        $overdue = 0;
         foreach ($overdueContacts as $contact) {
             $contact->update(['status' => ContactStatus::OVERDUE]);
-            $count++;
+            $overdue++;
         }
 
-        $this->info("Marked {$count} contact(s) as overdue.");
-        return 0;
+        $this->info("Unfroze {$unfrozen} contact(s), marked {$overdue} as overdue.");
+
+        return self::SUCCESS;
     }
 }
 

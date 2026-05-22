@@ -8,6 +8,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote')->hourly();
 
-// Проверка просроченных контактов каждый день в 00:00
+// Разморозка и проверка просроченных контактов — раз в сутки
 Schedule::command('contacts:check-overdue')->daily();
 

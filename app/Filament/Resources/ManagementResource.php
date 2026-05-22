@@ -6,6 +6,7 @@ use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ManagementResource\Pages;
 use App\Filament\Support\ContactCommentsSection;
+use App\Filament\Support\ContactFreezeFields;
 use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
 use App\Support\PhoneNumberHelper;
@@ -142,7 +143,13 @@ class ManagementResource extends Resource
                                 if ($state === ContactStatus::NOT_PROCESSED->value) {
                                     $set('assigned_leader_id', null);
                                 }
+                                if ($state !== ContactStatus::FROZEN->value) {
+                                    $set('freeze_date', null);
+                                    $set('freeze_reason', null);
+                                }
                             }),
+
+                        ...ContactFreezeFields::schema(),
 
                         Components\Select::make('assigned_leader_id')
                             ->label('Ответственный лидер')
@@ -240,6 +247,7 @@ class ManagementResource extends Resource
                     ->options([
                         ContactStatus::NOT_PROCESSED->value => ContactStatus::NOT_PROCESSED->getLabel(),
                         ContactStatus::ASSIGNED->value => ContactStatus::ASSIGNED->getLabel(),
+                        ContactStatus::FROZEN->value => ContactStatus::FROZEN->getLabel(),
                         ContactStatus::OVERDUE->value => ContactStatus::OVERDUE->getLabel(),
                         ContactStatus::SUCCESS->value => ContactStatus::SUCCESS->getLabel(),
                         ContactStatus::FAILED->value => ContactStatus::FAILED->getLabel(),

@@ -27,6 +27,7 @@ class Contact extends Model
         'district',
         'source',
         'status',
+        'frozen_until',
         'assigned_leader_id',
         'created_by',
     ];
@@ -34,6 +35,7 @@ class Contact extends Model
     protected $casts = [
         'source' => ContactSource::class,
         'status' => ContactStatus::class,
+        'frozen_until' => 'datetime',
     ];
 
     protected function phone(): Attribute
@@ -54,7 +56,7 @@ class Contact extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['full_name', 'phone', 'email', 'district', 'source', 'status', 'assigned_leader_id'])
+            ->logOnly(['full_name', 'phone', 'email', 'district', 'source', 'status', 'frozen_until', 'assigned_leader_id'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }

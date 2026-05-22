@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ManagementResource\Pages;
 
 use App\Filament\Resources\ManagementResource;
+use App\Filament\Support\ContactFreezeFields;
 use App\Filament\Support\PhoneDisplay;
 use App\Enums\ContactStatus;
 use Filament\Actions;
@@ -45,6 +46,10 @@ class ViewManagement extends ViewRecord
                             ->badge()
                             ->formatStateUsing(fn ($state) => $state->getLabel())
                             ->color(fn ($state) => $state->getColor()),
+                        Components\TextEntry::make('frozen_until')
+                            ->label('Разморозить')
+                            ->formatStateUsing(fn ($state) => ContactFreezeFields::formatFrozenUntilDisplay($state))
+                            ->visible(fn () => $this->record->status === ContactStatus::FROZEN),
                         Components\TextEntry::make('assignedLeader.name')
                             ->label('Ответственный лидер'),
                         Components\TextEntry::make('creator.name')

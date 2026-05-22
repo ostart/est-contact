@@ -27,14 +27,48 @@ class ContactObserver
         ]);
     }
 
+    public function saving(Contact $contact): void
+    {
+        if (! $contact->isDirty('status')) {
+            return;
+        }
+
+        $newStatus = $contact->status instanceof ContactStatus
+            ? $contact->status
+            : ContactStatus::from($contact->status);
+
+        if ($newStatus !== ContactStatus::FROZEN) {
+            $contact->frozen_until = null;
+
+            return;
+        }
+
+        if ($contact->frozen_until === null) {
+            throw ValidationException::withMessages([
+                'frozen_until' => 'Укажите дату разморозки.',
+            ]);
+        }
+
+        $frozenUntil = Carbon::parse($contact->frozen_until)->utc();
+
+        if ($frozenUntil->lte(now('UTC'))) {
+            throw ValidationException::withMessages([
+                'frozen_until' => 'Дата разморозки должна быть в будущем.',
+            ]);
+        }
+    }
+
     /**
      * Handle the Contact "updated" event.
      */
     public function updated(Contact $contact): void
     {
         // Проверяем изменение статуса (created_at явно в UTC)
-        if ($contact->isDirty('status')) {
-            $oldStatus = ContactStatus::tryFrom((string) $contact->getOriginal('status'));
+        if ($contact->wasChanged('status')) {
+            $oldStatusValue = $contact->getRawOriginal('status');
+            $oldStatus = is_string($oldStatusValue)
+                ? ContactStatus::tryFrom($oldStatusValue)
+                : null;
             $newStatus = $contact->status instanceof ContactStatus
                 ? $contact->status
                 : ContactStatus::from($contact->status);
@@ -51,9 +85,9 @@ class ContactObserver
 
             ContactStatusHistory::create([
                 'contact_id' => $contact->id,
-                'user_id' => auth()->id(), // null при смене статуса из консоли (например, contacts:check-overdue)
-                'old_status' => $contact->getOriginal('status'),
-                'new_status' => $contact->status->value,
+                'user_id' => auth()->id(), // null при смене статуса из консоли (contacts:check-overdue)
+                'old_status' => $oldStatusValue,
+                'new_status' => $newStatus->value,
                 'created_at' => Carbon::now('UTC'),
             ]);
         }

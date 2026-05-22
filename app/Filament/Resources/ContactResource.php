@@ -235,6 +235,7 @@ class ContactResource extends Resource
                         ->options([
                             ContactStatus::NOT_PROCESSED->value => ContactStatus::NOT_PROCESSED->getLabel(),
                             ContactStatus::ASSIGNED->value => ContactStatus::ASSIGNED->getLabel(),
+                            ContactStatus::FROZEN->value => ContactStatus::FROZEN->getLabel(),
                             ContactStatus::OVERDUE->value => ContactStatus::OVERDUE->getLabel(),
                             ContactStatus::SUCCESS->value => ContactStatus::SUCCESS->getLabel(),
                             ContactStatus::FAILED->value => ContactStatus::FAILED->getLabel(),
