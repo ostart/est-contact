@@ -16,7 +16,7 @@ enum ContactStatus: string
             self::NOT_PROCESSED => 'Не обработан',
             self::ASSIGNED => 'Назначен исполнитель',
             self::OVERDUE => 'Просрочен',
-            self::SUCCESS => 'Обработан успешно',
+            self::SUCCESS => 'Передан на БВ',
             self::FAILED => 'Обработан неуспешно',
         };
     }

@@ -151,7 +151,7 @@ class UsersTableWidget extends BaseWidget
                     ->color('gray'),
 
                 TextColumn::make('success_contacts')
-                    ->label('Успешно')
+                    ->label(ContactStatus::SUCCESS->getLabel())
                     ->sortable()
                     ->alignCenter()
                     ->badge()

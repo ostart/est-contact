@@ -70,7 +70,7 @@ class ContactsStatsWidget extends BaseWidget
                 ->color('warning')
                 ->icon('heroicon-o-clock'),
 
-            Stat::make('Успешно', number_format($success, 0, ',', ' '))
+            Stat::make(ContactStatus::SUCCESS->getLabel(), number_format($success, 0, ',', ' '))
                 ->description($successRate . '% успешных')
                 ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success')
