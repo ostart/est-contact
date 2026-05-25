@@ -83,7 +83,7 @@ class ContactsStatsWidget extends BaseWidget
                 ->color('success')
                 ->icon('heroicon-o-check-badge'),
 
-            Stat::make('Неуспешно', number_format($failed, 0, ',', ' '))
+            Stat::make(ContactStatus::FAILED->getLabel(), number_format($failed, 0, ',', ' '))
                 ->description($total > 0 ? round(($failed / $total) * 100, 1) . '%' : '0%')
                 ->descriptionIcon('heroicon-m-x-circle')
                 ->color('danger')

@@ -19,7 +19,7 @@ enum ContactStatus: string
             self::OVERDUE => 'Просрочен',
             self::FROZEN => 'Заморожен',
             self::SUCCESS => 'Передан на БВ',
-            self::FAILED => 'Обработан неуспешно',
+            self::FAILED => 'Отказ',
         };
     }
 
