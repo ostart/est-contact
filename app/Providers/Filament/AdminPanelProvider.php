@@ -10,6 +10,7 @@ use Filament\Enums\ThemeMode;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -36,6 +37,11 @@ class AdminPanelProvider extends PanelProvider
             ->font('Inter')
             ->brandName('БВ Контакт')
             ->homeUrl(fn (): ?string => auth()->check() ? auth()->user()->getFilamentHomeUrl() : null)
+            ->renderHook(
+                PanelsRenderHook::SIMPLE_LAYOUT_START,
+                fn (): \Illuminate\Contracts\View\View => view('filament.components.profile-simple-brand'),
+                scopes: \App\Filament\Pages\EditProfile::class,
+            )
             ->defaultThemeMode(ThemeMode::Light)
             ->favicon(asset('favicon.ico'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
