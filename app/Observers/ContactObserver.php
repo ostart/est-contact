@@ -25,6 +25,11 @@ class ContactObserver
             'new_status' => $contact->status->value,
             'created_at' => Carbon::now('UTC'),
         ]);
+
+        // При создании с назначенным лидером updated не вызывается — уведомляем здесь.
+        if ($contact->assigned_leader_id) {
+            $this->notifyAssignedLeader($contact);
+        }
     }
 
     public function saving(Contact $contact): void
@@ -94,10 +99,7 @@ class ContactObserver
 
         // Проверяем назначение лидера (wasChanged — после save; isDirty в updated уже сброшен)
         if ($contact->wasChanged('assigned_leader_id') && $contact->assigned_leader_id) {
-            $leader = $contact->assignedLeader;
-            if ($leader) {
-                $leader->notify(new ContactAssignedNotification($contact));
-            }
+            $this->notifyAssignedLeader($contact);
         }
 
         if ($contact->wasChanged('status') && $contact->status === ContactStatus::OVERDUE && $contact->assigned_leader_id) {
@@ -105,6 +107,15 @@ class ContactObserver
             if ($leader) {
                 $leader->notify(new ContactOverdueNotification($contact));
             }
+        }
+    }
+
+    protected function notifyAssignedLeader(Contact $contact): void
+    {
+        $leader = $contact->assignedLeader;
+
+        if ($leader) {
+            $leader->notify(new ContactAssignedNotification($contact));
         }
     }
 

@@ -182,7 +182,7 @@ class ContactResource extends Resource
                 Columns\TextColumn::make('email')
                     ->label('Email')
                     ->searchable()
-                    ->toggleable()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->copyable(),
 
                 Columns\TextColumn::make('district')
@@ -213,13 +213,13 @@ class ContactResource extends Resource
                     ->label('Создан')
                     ->formatStateUsing(fn ($state) => format_datetime_moscow($state))
                     ->sortable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Columns\TextColumn::make('updated_at')
                     ->label('Обновлен')
                     ->formatStateUsing(fn ($state) => format_datetime_moscow($state))
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
             ]);
 
         if ($leaderFiltersUiLocked) {
