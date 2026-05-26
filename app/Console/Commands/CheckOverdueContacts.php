@@ -33,18 +33,21 @@ class CheckOverdueContacts extends Command
             ->get();
 
         foreach ($frozenContacts as $contact) {
-            $contact->update(['status' => ContactStatus::ASSIGNED]);
+            $contact->update(['status' => $contact->statusBeforeFrozen()]);
             $unfrozen++;
         }
 
         $timeout = (int) SystemSetting::get('contact_processing_timeout_days', 30);
         $cutoffDate = now()->subDays($timeout);
+        $queueStatuses = ContactStatus::processingQueueValues();
 
-        $overdueContacts = Contact::where('status', ContactStatus::ASSIGNED->value)
-            ->whereHas('statusHistories', function ($query) use ($cutoffDate) {
-                $query->where('new_status', ContactStatus::ASSIGNED->value)
-                    ->where('created_at', '<=', $cutoffDate);
-            })
+        $overdueContacts = Contact::query()
+            ->whereIn('status', $queueStatuses)
+            ->whereRaw(
+                '(SELECT MIN(csh.created_at) FROM contact_status_histories AS csh
+                  WHERE csh.contact_id = contacts.id AND csh.new_status IN (?, ?)) <= ?',
+                [...$queueStatuses, $cutoffDate],
+            )
             ->get();
 
         $overdue = 0;
@@ -58,4 +61,3 @@ class CheckOverdueContacts extends Command
         return self::SUCCESS;
     }
 }
-

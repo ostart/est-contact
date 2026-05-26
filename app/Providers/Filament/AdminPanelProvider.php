@@ -33,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->profile(\App\Filament\Pages\EditProfile::class)
             ->colors([
                 'primary' => Color::Blue,
+                'azure' => Color::hex('#C5EBFA'),
                 'purple' => Color::Purple,
             ])
             ->font('Inter')

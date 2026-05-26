@@ -28,7 +28,7 @@ class CreateManagement extends CreateRecord
         if (isset($data['status']) && $data['status'] === ContactStatus::NOT_PROCESSED->value) {
             $data['assigned_leader_id'] = null;
         }
-        // Если назначен ответственный - статус автоматически "Назначен исполнитель"
+        // Если назначен ответственный — статус «Назначено»
         elseif (! empty($data['assigned_leader_id'])) {
             $data['status'] = ContactStatus::ASSIGNED->value;
         }

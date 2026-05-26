@@ -6,6 +6,7 @@ enum ContactStatus: string
 {
     case NOT_PROCESSED = 'not_processed';
     case ASSIGNED = 'assigned';
+    case IN_PROGRESS = 'in_progress';
     case OVERDUE = 'overdue';
     case FROZEN = 'frozen';
     case SUCCESS = 'success';
@@ -15,7 +16,8 @@ enum ContactStatus: string
     {
         return match ($this) {
             self::NOT_PROCESSED => 'Не обработан',
-            self::ASSIGNED => 'Назначен исполнитель',
+            self::ASSIGNED => 'Назначено',
+            self::IN_PROGRESS => 'В работе',
             self::OVERDUE => 'Просрочен',
             self::FROZEN => 'Заморожен',
             self::SUCCESS => 'Передан на БВ',
@@ -28,6 +30,7 @@ enum ContactStatus: string
         return match ($this) {
             self::NOT_PROCESSED => 'gray',
             self::ASSIGNED => 'info',
+            self::IN_PROGRESS => 'azure',
             self::OVERDUE => 'warning',
             self::FROZEN => 'purple',
             self::SUCCESS => 'success',
@@ -38,6 +41,19 @@ enum ContactStatus: string
     public function isFinal(): bool
     {
         return in_array($this, [self::SUCCESS, self::FAILED], true);
+    }
+
+    /**
+     * Статусы очереди/обработки, от которых отсчитывается просрочка.
+     *
+     * @return list<string>
+     */
+    public static function processingQueueValues(): array
+    {
+        return [
+            self::ASSIGNED->value,
+            self::IN_PROGRESS->value,
+        ];
     }
 
     /**
@@ -58,10 +74,11 @@ enum ContactStatus: string
         }
 
         return match ($this) {
-            self::NOT_PROCESSED => [self::ASSIGNED],
-            self::ASSIGNED => [self::NOT_PROCESSED, self::FROZEN, self::SUCCESS, self::FAILED],
-            self::FROZEN => [self::ASSIGNED],
-            self::OVERDUE => [self::NOT_PROCESSED, self::ASSIGNED, self::SUCCESS, self::FAILED],
+            self::NOT_PROCESSED => [self::ASSIGNED, self::IN_PROGRESS],
+            self::ASSIGNED => [self::NOT_PROCESSED, self::IN_PROGRESS],
+            self::IN_PROGRESS => [self::NOT_PROCESSED, self::FROZEN, self::SUCCESS, self::FAILED],
+            self::FROZEN => [self::ASSIGNED, self::IN_PROGRESS],
+            self::OVERDUE => [self::NOT_PROCESSED, self::ASSIGNED, self::IN_PROGRESS, self::SUCCESS, self::FAILED],
             default => [],
         };
     }
@@ -80,7 +97,7 @@ enum ContactStatus: string
             $options = [$this->value => $this->getLabel()] + $options;
         }
 
-        if ($forManager && $this === self::ASSIGNED) {
+        if ($forManager && in_array($this, [self::ASSIGNED, self::IN_PROGRESS], true)) {
             $options[self::OVERDUE->value] = self::OVERDUE->getLabel();
         }
 
@@ -89,7 +106,7 @@ enum ContactStatus: string
 
     public function getTransitionLabel(?self $from = null): string
     {
-        if ($from === self::FROZEN && $this === self::ASSIGNED) {
+        if ($from === self::FROZEN && $this === self::IN_PROGRESS) {
             return 'Вернуть в работу';
         }
 
@@ -103,11 +120,11 @@ enum ContactStatus: string
         }
 
         if ($system) {
-            return ($this === self::ASSIGNED && $target === self::OVERDUE)
-                || ($this === self::FROZEN && $target === self::ASSIGNED);
+            return (in_array($this, [self::ASSIGNED, self::IN_PROGRESS], true) && $target === self::OVERDUE)
+                || ($this === self::FROZEN && in_array($target, [self::ASSIGNED, self::IN_PROGRESS], true));
         }
 
-        if ($forManager && $this === self::ASSIGNED && $target === self::OVERDUE) {
+        if ($forManager && in_array($this, [self::ASSIGNED, self::IN_PROGRESS], true) && $target === self::OVERDUE) {
             return true;
         }
 

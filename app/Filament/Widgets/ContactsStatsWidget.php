@@ -27,7 +27,8 @@ class ContactsStatsWidget extends BaseWidget
     {
         $total = Contact::count();
         $awaiting = Contact::where('status', ContactStatus::NOT_PROCESSED)->count();
-        $inProgress = Contact::where('status', ContactStatus::ASSIGNED)->count();
+        $assigned = Contact::where('status', ContactStatus::ASSIGNED)->count();
+        $inProgress = Contact::where('status', ContactStatus::IN_PROGRESS)->count();
         $frozen = Contact::where('status', ContactStatus::FROZEN)->count();
         $overdue = Contact::where('status', ContactStatus::OVERDUE)->count();
         $success = Contact::where('status', ContactStatus::SUCCESS)->count();
@@ -35,6 +36,7 @@ class ContactsStatsWidget extends BaseWidget
         $newThisWeek = Contact::where('created_at', '>=', now()->subWeek())->count();
         
         $successRate = $total > 0 ? round(($success / $total) * 100, 1) : 0;
+        $assignedRate = $total > 0 ? round(($assigned / $total) * 100, 1) : 0;
         $inProgressRate = $total > 0 ? round(($inProgress / $total) * 100, 1) : 0;
         $overdueRate = $total > 0 ? round(($overdue / $total) * 100, 1) : 0;
 
@@ -59,10 +61,16 @@ class ContactsStatsWidget extends BaseWidget
                 ->color(ContactStatus::NOT_PROCESSED->getColor())
                 ->icon('heroicon-o-pause-circle'),
 
-            Stat::make('В работе', number_format($inProgress, 0, ',', ' '))
+            Stat::make(ContactStatus::ASSIGNED->getLabel(), number_format($assigned, 0, ',', ' '))
+                ->description($assignedRate . '% в очереди')
+                ->descriptionIcon('heroicon-m-user-plus')
+                ->color(ContactStatus::ASSIGNED->getColor())
+                ->icon('heroicon-o-inbox'),
+
+            Stat::make(ContactStatus::IN_PROGRESS->getLabel(), number_format($inProgress, 0, ',', ' '))
                 ->description($inProgressRate . '% активных')
                 ->descriptionIcon('heroicon-m-arrow-path')
-                ->color(ContactStatus::ASSIGNED->getColor())
+                ->color(ContactStatus::IN_PROGRESS->getColor())
                 ->icon('heroicon-o-cog-6-tooth'),
 
             Stat::make(ContactStatus::FROZEN->getLabel(), number_format($frozen, 0, ',', ' '))

@@ -39,14 +39,23 @@ class ViewContact extends ViewRecord
         // 2. Он назначен ответственным (включая финальные — переоткрытие или смена результата)
         $canEditStatus = $isLeader && ($isNotProcessed || $isAssignedToCurrentUser);
 
-        $availableStatuses = $isNotProcessed
-            ? [ContactStatus::ASSIGNED->value => 'Взять в работу']
-            : collect($status->transitionOptions(includeCurrent: false))
+        $takeToWorkOption = [ContactStatus::IN_PROGRESS->value => 'Взять в работу'];
+
+        $availableStatuses = match (true) {
+            $isNotProcessed => $takeToWorkOption,
+            $status === ContactStatus::ASSIGNED && $isAssignedToCurrentUser => array_merge(
+                $takeToWorkOption,
+                collect($status->transitionOptions(includeCurrent: false))
+                    ->except([ContactStatus::IN_PROGRESS->value])
+                    ->all(),
+            ),
+            default => collect($status->transitionOptions(includeCurrent: false))
                 ->when(
                     ! $status->isFinal(),
                     fn ($options) => $options->except([ContactStatus::OVERDUE->value]),
                 )
-                ->all();
+                ->all(),
+        };
 
         return $schema
             ->components([
@@ -177,7 +186,7 @@ class ViewContact extends ViewRecord
                                                 ->label('Новый статус')
                                                 ->options($availableStatuses)
                                                 ->default(fn () => $status === ContactStatus::FROZEN
-                                                    ? ContactStatus::ASSIGNED->value
+                                                    ? $this->record->statusBeforeFrozen()->value
                                                     : ($this->record->status instanceof ContactStatus ? $this->record->status->value : $this->record->status))
                                                 ->required()
                                                 ->live(),
@@ -204,7 +213,10 @@ class ViewContact extends ViewRecord
                                             
                                             if ($data['status'] === ContactStatus::NOT_PROCESSED->value) {
                                                 $updateData['assigned_leader_id'] = null;
-                                            } elseif ($isNotProcessed && $data['status'] === ContactStatus::ASSIGNED->value) {
+                                            } elseif (
+                                                ($isNotProcessed || $status === ContactStatus::ASSIGNED)
+                                                && $data['status'] === ContactStatus::IN_PROGRESS->value
+                                            ) {
                                                 $updateData['assigned_leader_id'] = auth()->id();
                                             }
                                             

@@ -47,8 +47,11 @@ class UsersTableWidget extends BaseWidget
                         'assignedContacts as failed_contacts' => function (Builder $query) {
                             $query->where('status', ContactStatus::FAILED->value);
                         },
-                        'assignedContacts as in_progress_contacts' => function (Builder $query) {
+                        'assignedContacts as assigned_contacts' => function (Builder $query) {
                             $query->where('status', ContactStatus::ASSIGNED->value);
+                        },
+                        'assignedContacts as in_progress_contacts' => function (Builder $query) {
+                            $query->where('status', ContactStatus::IN_PROGRESS->value);
                         },
                         'assignedContacts as frozen_contacts' => function (Builder $query) {
                             $query->where('status', ContactStatus::FROZEN->value);
@@ -167,12 +170,19 @@ class UsersTableWidget extends BaseWidget
                     ->badge()
                     ->color(ContactStatus::FAILED->getColor()),
 
-                TextColumn::make('in_progress_contacts')
-                    ->label('В работе')
+                TextColumn::make('assigned_contacts')
+                    ->label(ContactStatus::ASSIGNED->getLabel())
                     ->sortable()
                     ->alignCenter()
                     ->badge()
                     ->color(ContactStatus::ASSIGNED->getColor()),
+
+                TextColumn::make('in_progress_contacts')
+                    ->label(ContactStatus::IN_PROGRESS->getLabel())
+                    ->sortable()
+                    ->alignCenter()
+                    ->badge()
+                    ->color(ContactStatus::IN_PROGRESS->getColor()),
 
                 TextColumn::make('frozen_contacts')
                     ->label(ContactStatus::FROZEN->getLabel())
@@ -193,14 +203,14 @@ class UsersTableWidget extends BaseWidget
                     ->sortable()
                     ->alignCenter()
                     ->badge()
-                    ->color(fn($state) => $state > 0 ? 'warning' : 'gray'),
+                    ->color('warning'),
 
                 TextColumn::make('bans_count')
                     ->label('Баны')
                     ->sortable()
                     ->alignCenter()
                     ->badge()
-                    ->color(fn($state) => $state > 0 ? 'danger' : 'gray'),
+                    ->color('danger'),
             ])
             ->defaultSort('total_contacts', 'desc')
             ->paginated([10, 25, 50])

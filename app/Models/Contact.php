@@ -81,23 +81,47 @@ class Contact extends Model
         return $this->hasMany(ContactStatusHistory::class)->orderByDesc('created_at');
     }
 
+    public function processingStartedAt(): ?\Illuminate\Support\Carbon
+    {
+        return $this->statusHistories()
+            ->whereIn('new_status', ContactStatus::processingQueueValues())
+            ->reorder()
+            ->orderBy('created_at')
+            ->value('created_at');
+    }
+
+    public function statusBeforeFrozen(): ContactStatus
+    {
+        $oldStatus = $this->statusHistories()
+            ->where('new_status', ContactStatus::FROZEN->value)
+            ->reorder()
+            ->orderByDesc('created_at')
+            ->value('old_status');
+
+        $status = is_string($oldStatus) ? ContactStatus::tryFrom($oldStatus) : null;
+
+        if ($status === ContactStatus::IN_PROGRESS) {
+            return ContactStatus::IN_PROGRESS;
+        }
+
+        return ContactStatus::ASSIGNED;
+    }
+
     public function isOverdue(): bool
     {
-        if ($this->status !== ContactStatus::ASSIGNED) {
+        if (! in_array($this->status, [ContactStatus::ASSIGNED, ContactStatus::IN_PROGRESS], true)) {
             return false;
         }
 
-        $timeout = SystemSetting::get('contact_processing_timeout_days', 30);
-        $assignedDate = $this->statusHistories()
-            ->where('new_status', ContactStatus::ASSIGNED->value)
-            ->latest()
-            ->first()?->created_at;
+        $startedAt = $this->processingStartedAt();
 
-        if (!$assignedDate) {
+        if ($startedAt === null) {
             return false;
         }
 
-        return now()->diffInDays($assignedDate) > $timeout;
+        $timeout = (int) SystemSetting::get('contact_processing_timeout_days', 30);
+
+        return now()->diffInDays($startedAt) > $timeout;
     }
 }
 
