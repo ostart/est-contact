@@ -68,4 +68,11 @@ class ContactStatusTest extends TestCase
             ContactStatus::ASSIGNED->getTransitionLabel(ContactStatus::FROZEN),
         );
     }
+
+    public function test_frozen_has_distinct_color_from_assigned(): void
+    {
+        $this->assertSame('purple', ContactStatus::FROZEN->getColor());
+        $this->assertSame('info', ContactStatus::ASSIGNED->getColor());
+        $this->assertNotSame(ContactStatus::FROZEN->getColor(), ContactStatus::ASSIGNED->getColor());
+    }
 }

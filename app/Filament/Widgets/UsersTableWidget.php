@@ -158,35 +158,35 @@ class UsersTableWidget extends BaseWidget
                     ->sortable()
                     ->alignCenter()
                     ->badge()
-                    ->color('success'),
+                    ->color(ContactStatus::SUCCESS->getColor()),
 
                 TextColumn::make('failed_contacts')
                     ->label(ContactStatus::FAILED->getLabel())
                     ->sortable()
                     ->alignCenter()
                     ->badge()
-                    ->color('danger'),
+                    ->color(ContactStatus::FAILED->getColor()),
 
                 TextColumn::make('in_progress_contacts')
                     ->label('В работе')
                     ->sortable()
                     ->alignCenter()
                     ->badge()
-                    ->color('info'),
+                    ->color(ContactStatus::ASSIGNED->getColor()),
 
                 TextColumn::make('frozen_contacts')
-                    ->label('Заморожено')
+                    ->label(ContactStatus::FROZEN->getLabel())
                     ->sortable()
                     ->alignCenter()
                     ->badge()
-                    ->color('primary'),
+                    ->color(ContactStatus::FROZEN->getColor()),
 
                 TextColumn::make('overdue_contacts')
                     ->label('Просрочено')
                     ->sortable()
                     ->alignCenter()
                     ->badge()
-                    ->color('warning'),
+                    ->color(ContactStatus::OVERDUE->getColor()),
 
                 TextColumn::make('warnings_count')
                     ->label('Предупр.')

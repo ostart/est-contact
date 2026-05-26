@@ -33,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->profile(\App\Filament\Pages\EditProfile::class)
             ->colors([
                 'primary' => Color::Blue,
+                'purple' => Color::Purple,
             ])
             ->font('Inter')
             ->brandName('БВ Контакт')

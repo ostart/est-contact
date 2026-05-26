@@ -29,7 +29,7 @@ enum ContactStatus: string
             self::NOT_PROCESSED => 'gray',
             self::ASSIGNED => 'info',
             self::OVERDUE => 'warning',
-            self::FROZEN => 'primary',
+            self::FROZEN => 'purple',
             self::SUCCESS => 'success',
             self::FAILED => 'danger',
         };
