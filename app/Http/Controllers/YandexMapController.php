@@ -12,7 +12,7 @@ class YandexMapController extends Controller
         abort_unless($request->user()?->hasAnyRole(['manager', 'leader']), 403);
 
         return view('map.yandex-embed', [
-            'apiKey' => config('services.yandex_maps.api_key'),
+            'embedUrl' => config('services.yandex_maps.embed_url'),
         ]);
     }
 }

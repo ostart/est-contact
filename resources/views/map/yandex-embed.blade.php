@@ -7,7 +7,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; font-family: Inter, system-ui, sans-serif; background: #f9fafb; }
-        #map { width: 100%; height: 100%; }
+        iframe { display: block; width: 100%; height: 100%; border: 0; }
         .error {
             display: flex;
             align-items: center;
@@ -21,31 +21,13 @@
     </style>
 </head>
 <body>
-    @if (blank($apiKey))
+    @if (blank($embedUrl))
         <div class="error">
-            Укажите ключ API Яндекс.Карт в переменной окружения <strong>YANDEX_MAPS_API_KEY</strong>
-            (бесплатный тариф в <a href="https://developer.tech.yandex.ru/" target="_blank" rel="noopener">кабинете разработчика</a>).
+            Укажите URL виджета карты в переменной окружения <strong>YANDEX_MAPS_EMBED_URL</strong>
+            (код iframe из <a href="https://yandex.ru/map-constructor/" target="_blank" rel="noopener">конструктора Яндекс.Карт</a>).
         </div>
     @else
-        <div id="map"></div>
-
-        <script src="https://api-maps.yandex.ru/2.1/?apikey={{ urlencode($apiKey) }}&lang=ru_RU" type="text/javascript"></script>
-        <script>
-            ymaps.ready(function () {
-                new ymaps.Map('map', {
-                    center: [55.751574, 37.573856],
-                    zoom: 10,
-                    controls: [
-                        'zoomControl',
-                        'geolocationControl',
-                        'searchControl',
-                        'typeSelector',
-                        'fullscreenControl',
-                        'rulerControl',
-                    ],
-                });
-            });
-        </script>
+        <iframe src="{{ $embedUrl }}" title="Яндекс Карта" loading="lazy"></iframe>
     @endif
 </body>
 </html>
