@@ -159,9 +159,8 @@ class ContactResource extends Resource
         $isLeader = $user->hasRole('leader');
         $leaderFiltersUiLocked = $isLeader && ! $user->can_use_contact_filters;
 
-        $applyLeaderContactsInWorkScope = fn (Builder $query): Builder => $query
-            ->where('assigned_leader_id', auth()->id())
-            ->whereNotIn('status', [ContactStatus::SUCCESS->value, ContactStatus::FAILED->value]);
+        $applyMyContactsScope = fn (Builder $query): Builder => $query
+            ->where('assigned_leader_id', auth()->id());
 
         $table = $table
             ->columns([
@@ -223,10 +222,10 @@ class ContactResource extends Resource
             ]);
 
         if ($leaderFiltersUiLocked) {
-            // Без UI-фильтров кнопка «Фильтр» не рендерится; отбор «Мои контакты в работе» — в запросе.
+            // Без UI-фильтров кнопка «Фильтр» не рендерится; отбор «Мои контакты» — в запросе.
             $table = $table
                 ->filters([])
-                ->modifyQueryUsing($applyLeaderContactsInWorkScope);
+                ->modifyQueryUsing($applyMyContactsScope);
         } else {
             $table = $table
                 ->filters([
@@ -254,10 +253,9 @@ class ContactResource extends Resource
                         ->preload(),
 
                     Tables\Filters\Filter::make('my_contacts')
-                        ->label('Мои контакты в работе')
+                        ->label('Мои контакты')
                         ->query(fn (Builder $query): Builder => $query
                             ->where('assigned_leader_id', auth()->id())
-                            ->whereNotIn('status', [ContactStatus::SUCCESS->value, ContactStatus::FAILED->value])
                         )
                         ->default($isLeader),
 

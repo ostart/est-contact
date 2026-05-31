@@ -131,7 +131,7 @@ class UserResource extends Resource
 
                         Components\Toggle::make('can_use_contact_filters')
                             ->label('Разрешить фильтрацию списка контактов')
-                            ->helperText('Включено — лидер может открыть фильтры и менять отбор. Выключено — отбор по умолчанию «Мои контакты в работе» остаётся, но изменить фильтры лидер не может.')
+                            ->helperText('Включено — лидер может открыть фильтры и менять отбор. Выключено — отбор по умолчанию «Мои контакты» остаётся, но изменить фильтры лидер не может.')
                             ->default(false)
                             ->visible(function ($get): bool {
                                 $leaderRoleId = Role::query()->where('name', 'leader')->value('id');
