@@ -276,7 +276,7 @@ class ContactResource extends Resource
             ->toolbarActions([
                 // Нет массовых действий для лидеров
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultKeySort(false);
     }
 
     public static function getPages(): array

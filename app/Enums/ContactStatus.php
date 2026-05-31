@@ -44,6 +44,38 @@ enum ContactStatus: string
     }
 
     /**
+     * Приоритет группы для сортировки таблиц «Контакты» и «Управление» (меньше — выше в списке).
+     */
+    public static function defaultTableSortGroup(?self $status): int
+    {
+        return match ($status) {
+            self::NOT_PROCESSED => 1,
+            self::ASSIGNED => 2,
+            self::IN_PROGRESS => 3,
+            self::OVERDUE => 4,
+            self::FROZEN => 5,
+            self::SUCCESS => 6,
+            self::FAILED => 7,
+            default => 8,
+        };
+    }
+
+    public static function defaultTableSortGroupSql(string $statusColumn): string
+    {
+        $cases = array_map(
+            fn (self $status): string => sprintf(
+                "    WHEN %s = '%s' THEN %d",
+                $statusColumn,
+                $status->value,
+                self::defaultTableSortGroup($status),
+            ),
+            self::cases(),
+        );
+
+        return "CASE\n" . implode("\n", $cases) . "\n    ELSE 8\nEND";
+    }
+
+    /**
      * Статусы очереди/обработки, от которых отсчитывается просрочка.
      *
      * @return list<string>

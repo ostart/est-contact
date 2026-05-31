@@ -107,4 +107,33 @@ class ContactStatusTest extends TestCase
             ContactStatus::processingQueueValues(),
         );
     }
+
+    public function test_default_table_sort_group_order(): void
+    {
+        $this->assertSame(1, ContactStatus::defaultTableSortGroup(ContactStatus::NOT_PROCESSED));
+        $this->assertSame(2, ContactStatus::defaultTableSortGroup(ContactStatus::ASSIGNED));
+        $this->assertSame(3, ContactStatus::defaultTableSortGroup(ContactStatus::IN_PROGRESS));
+        $this->assertSame(4, ContactStatus::defaultTableSortGroup(ContactStatus::OVERDUE));
+        $this->assertSame(5, ContactStatus::defaultTableSortGroup(ContactStatus::FROZEN));
+        $this->assertSame(6, ContactStatus::defaultTableSortGroup(ContactStatus::SUCCESS));
+        $this->assertSame(7, ContactStatus::defaultTableSortGroup(ContactStatus::FAILED));
+        $this->assertSame(8, ContactStatus::defaultTableSortGroup(null));
+
+        $statuses = [
+            ContactStatus::NOT_PROCESSED,
+            ContactStatus::ASSIGNED,
+            ContactStatus::IN_PROGRESS,
+            ContactStatus::OVERDUE,
+            ContactStatus::FROZEN,
+            ContactStatus::SUCCESS,
+            ContactStatus::FAILED,
+        ];
+
+        for ($i = 1; $i < count($statuses); $i++) {
+            $this->assertLessThan(
+                ContactStatus::defaultTableSortGroup($statuses[$i]),
+                ContactStatus::defaultTableSortGroup($statuses[$i - 1]),
+            );
+        }
+    }
 }

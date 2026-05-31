@@ -284,7 +284,7 @@ class ManagementResource extends Resource
                         ->successRedirectUrl(ManagementResource::getUrl('index')),
                 ]),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultKeySort(false);
     }
 
     public static function getPages(): array

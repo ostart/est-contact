@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Support\PhoneNumberHelper;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -122,6 +123,26 @@ class Contact extends Model
         $timeout = (int) SystemSetting::get('contact_processing_timeout_days', 30);
 
         return now()->diffInDays($startedAt) > $timeout;
+    }
+
+    /**
+     * Сортировка по умолчанию для таблиц контактов: группа статуса → ответственный → дата изменения (сначала новые).
+     */
+    public function scopeDefaultTableOrder(Builder $query): Builder
+    {
+        $table = $query->getModel()->getTable();
+
+        return $query
+            ->leftJoin(
+                'users as contact_sort_leaders',
+                "{$table}.assigned_leader_id",
+                '=',
+                'contact_sort_leaders.id',
+            )
+            ->orderByRaw(ContactStatus::defaultTableSortGroupSql("{$table}.status"))
+            ->orderBy('contact_sort_leaders.name')
+            ->orderByDesc("{$table}.updated_at")
+            ->select("{$table}.*");
     }
 }
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ManagementResource\Pages;
 
+use App\Filament\Concerns\AppliesContactTableDefaultOrder;
 use App\Filament\Concerns\UsesContactTableColumnDefaults;
 use App\Filament\Resources\ManagementResource;
 use App\Filament\Support\YandexMapAction;
@@ -12,6 +13,7 @@ use Filament\Support\Enums\Size;
 
 class ListManagement extends ListRecords
 {
+    use AppliesContactTableDefaultOrder;
     use UsesContactTableColumnDefaults;
     protected static string $resource = ManagementResource::class;
 
