@@ -9,6 +9,6 @@ trait UsesContactTableColumnDefaults
 {
     public function getTableColumnsSessionKey(): string
     {
-        return parent::getTableColumnsSessionKey() . '_v2';
+        return parent::getTableColumnsSessionKey() . '_v3';
     }
 }
