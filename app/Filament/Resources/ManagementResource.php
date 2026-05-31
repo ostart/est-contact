@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\CommentsContext;
 use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ManagementResource\Pages;
+use App\Filament\Support\ContactTableSearch;
 use App\Filament\Support\ContactCommentsSection;
 use App\Filament\Support\ContactFreezeFields;
 use App\Filament\Support\PhoneDisplay;
@@ -114,16 +116,7 @@ class ManagementResource extends Resource
                             ->native(false),
                     ])->columns(2),
 
-                SchemaComponents\Section::make('Комментарии')
-                    ->schema([
-                        ContactCommentsSection::commentsRepeater(),
-
-                        SchemaComponents\Actions::make([
-                            ContactCommentsSection::addCommentAction(),
-                        ])
-                            ->visibleOn('edit'),
-                    ])
-                    ->collapsible(),
+                ContactCommentsSection::formSection(CommentsContext::ManagerEdit),
 
                 SchemaComponents\Section::make('Статус и назначение')
                     ->schema([
@@ -187,7 +180,9 @@ class ManagementResource extends Resource
             ->columns([
                 Columns\TextColumn::make('full_name')
                     ->label('ФИО')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): void {
+                        ContactTableSearch::applyLike($query, 'full_name', $search);
+                    })
                     ->sortable(),
 
                 PhoneDisplay::tableColumn(
@@ -201,13 +196,17 @@ class ManagementResource extends Resource
 
                 Columns\TextColumn::make('email')
                     ->label('Email')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): void {
+                        ContactTableSearch::applyLike($query, 'email', $search);
+                    })
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->copyable(),
 
                 Columns\TextColumn::make('district')
                     ->label('Район')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): void {
+                        ContactTableSearch::applyLike($query, 'district', $search);
+                    })
                     ->toggleable(),
 
                 Columns\TextColumn::make('source')

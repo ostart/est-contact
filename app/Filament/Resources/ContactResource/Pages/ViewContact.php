@@ -2,13 +2,12 @@
 
 namespace App\Filament\Resources\ContactResource\Pages;
 
-use App\Enums\ContactSource;
+use App\Enums\CommentsContext;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ContactResource;
+use App\Filament\Support\ContactCommentsSection;
 use App\Filament\Support\ContactFreezeFields;
 use App\Filament\Support\PhoneDisplay;
-use App\Models\Contact;
-use Filament\Actions;
 use Filament\Forms;
 use Filament\Infolists\Components;
 use Filament\Notifications\Notification;
@@ -94,62 +93,7 @@ class ViewContact extends ViewRecord
                             ->formatStateUsing(fn ($state) => format_datetime_moscow($state)),
                     ])->columns(2)->columnSpanFull(),
 
-                // Десктоп: слева Комментарии, справа Добавить комментарий. Мобильная: в один столбец.
-                SchemaComponents\Section::make()
-                    ->schema([
-                        SchemaComponents\Section::make('Комментарии')
-                            ->schema([
-                                Components\RepeatableEntry::make('comments')
-                                    ->label('')
-                                    ->schema([
-                                        Components\TextEntry::make('user.name')
-                                            ->label('Пользователь'),
-                                        Components\TextEntry::make('comment')
-                                            ->label('Комментарий')
-                                            ->columnSpan(2),
-                                        Components\TextEntry::make('created_at')
-                                            ->label('Дата')
-                                            ->formatStateUsing(fn ($state) => format_datetime_moscow($state)),
-                                    ])
-                                    ->columns(4),
-                            ])
-                            ->collapsible()
-                            ->columnSpan(['default' => 'full', 'lg' => 1]),
-                        SchemaComponents\Section::make('Добавить комментарий')
-                            ->schema([
-                                SchemaComponents\Actions::make([
-                                    \Filament\Actions\Action::make('add_comment')
-                                        ->label('Добавить комментарий')
-                                        ->form([
-                                            Forms\Components\Textarea::make('comment')
-                                                ->label('Комментарий')
-                                                ->required()
-                                                ->rows(3),
-                                        ])
-                                        ->action(function (array $data) {
-                                            $this->record->comments()->create([
-                                                'comment' => $data['comment'],
-                                                'user_id' => auth()->id(),
-                                                'created_at' => \Carbon\Carbon::now('UTC'),
-                                            ]);
-                                            
-                                            Notification::make()
-                                                ->title('Комментарий добавлен')
-                                                ->success()
-                                                ->send();
-                                            
-                                            redirect()->to(static::getResource()::getUrl('view', ['record' => $this->record]));
-                                        })
-                                        ->modalSubmitActionLabel('Добавить')
-                                        ->modalCancelActionLabel('Отмена'),
-                                ]),
-                            ])
-                            ->visible($isLeader)
-                            ->collapsible()
-                            ->columnSpan(['default' => 'full', 'lg' => 1]),
-                    ])
-                    ->columns(['default' => 1, 'lg' => 2])
-                    ->columnSpanFull(),
+                ContactCommentsSection::infolistSection(CommentsContext::LeaderView),
 
                 // Десктоп: слева История статусов, справа Изменить статус. Мобильная: в один столбец.
                 SchemaComponents\Section::make()

@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\ManagementResource\Pages;
 
+use App\Enums\CommentsContext;
 use App\Filament\Resources\ManagementResource;
+use App\Filament\Support\ContactCommentsSection;
 use App\Filament\Support\ContactFreezeFields;
 use App\Filament\Support\PhoneDisplay;
 use App\Enums\ContactStatus;
@@ -80,21 +82,7 @@ class ViewManagement extends ViewRecord
                             ->columns(5),
                     ])->collapsible(),
 
-                SchemaComponents\Section::make('Комментарии')
-                    ->schema([
-                        Components\RepeatableEntry::make('comments')
-                            ->label('')
-                            ->schema([
-                                Components\TextEntry::make('user.name')
-                                    ->label('Пользователь'),
-                                Components\TextEntry::make('comment')
-                                    ->label('Комментарий'),
-                                Components\TextEntry::make('created_at')
-                                    ->label('Дата')
-                                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state)),
-                            ])
-                            ->columns(3),
-                    ])->collapsible(),
+                ContactCommentsSection::infolistSection(CommentsContext::ManagerView),
             ]);
     }
 }

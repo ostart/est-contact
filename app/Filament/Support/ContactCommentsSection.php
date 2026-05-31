@@ -2,103 +2,64 @@
 
 namespace App\Filament\Support;
 
-use App\Filament\Resources\ManagementResource;
-use App\Models\ContactComment;
-use Carbon\Carbon;
-use Filament\Actions\Action;
-use Filament\Forms;
-use Filament\Forms\Components\Repeater;
-use Filament\Notifications\Notification;
-use Filament\Resources\Pages\EditRecord;
+use App\Enums\CommentsContext;
+use App\Livewire\ContactCommentsTable;
+use App\Models\Contact;
+use Filament\Forms\Components;
+use Filament\Schemas\Components as SchemaComponents;
+use Filament\Schemas\Components\Livewire;
 
 class ContactCommentsSection
 {
-    public static function commentsRepeater(): Repeater
+    public static function tableComponent(CommentsContext $context): Livewire
     {
-        return Repeater::make('comments')
-            ->label('')
-            ->relationship()
-            ->schema([
-                Forms\Components\Placeholder::make('user_name')
-                    ->label('Автор')
-                    ->content(fn ($record) => $record?->user?->name ?? '—')
-                    ->visibleOn('edit'),
-
-                Forms\Components\Textarea::make('comment')
-                    ->label('Комментарий')
-                    ->required()
-                    ->rows(3)
-                    ->columnSpanFull(),
-
-                Forms\Components\Hidden::make('user_id')
-                    ->default(fn () => auth()->id()),
+        return SchemaComponents\Livewire::make(ContactCommentsTable::class)
+            ->data(fn (?Contact $record): array => [
+                'contactId' => $record?->getKey() ?? 0,
+                'context' => $context->value,
             ])
-            ->addActionLabel('Добавить комментарий')
-            ->addable(fn (string $operation): bool => $operation === 'create')
-            ->deletable(true)
-            ->reorderable(false)
-            ->defaultItems(0)
+            ->visible(fn (?Contact $record, string $operation): bool => $operation === 'edit' && filled($record?->getKey()))
             ->columnSpanFull()
-            ->deleteAction(function (Action $action, string $operation): Action {
-                if ($operation !== 'edit') {
-                    return $action;
-                }
-
-                return $action
-                    ->requiresConfirmation()
-                    ->modalHeading('Удалить комментарий?')
-                    ->modalSubmitActionLabel('Удалить')
-                    ->modalCancelActionLabel('Отмена')
-                    ->action(function (array $arguments, Repeater $component, EditRecord $livewire): void {
-                        $itemKey = $arguments['item'];
-                        $record = $component->getCachedExistingRecords()[$itemKey] ?? null;
-
-                        if ($record === null && is_numeric($itemKey)) {
-                            $record = ContactComment::query()
-                                ->whereKey($itemKey)
-                                ->where('contact_id', $livewire->getRecord()->getKey())
-                                ->first();
-                        }
-
-                        if ($record !== null) {
-                            $record->delete();
-                        }
-
-                        Notification::make()
-                            ->title('Комментарий удалён')
-                            ->success()
-                            ->send();
-
-                        $livewire->redirect(ManagementResource::getUrl('edit', ['record' => $livewire->getRecord()]));
-                    });
-            });
+            ->key(fn (?Contact $record): string => 'contact-comments-'.($record?->getKey() ?? 'none'));
     }
 
-    public static function addCommentAction(): Action
+    public static function infolistTableComponent(CommentsContext $context): Livewire
     {
-        return Action::make('add_comment')
-            ->label('Добавить комментарий')
-            ->form([
-                Forms\Components\Textarea::make('comment')
-                    ->label('Комментарий')
-                    ->required()
-                    ->rows(3),
+        return SchemaComponents\Livewire::make(ContactCommentsTable::class)
+            ->data(fn (Contact $record): array => [
+                'contactId' => $record->getKey(),
+                'context' => $context->value,
             ])
-            ->action(function (array $data, EditRecord $livewire): void {
-                $livewire->getRecord()->comments()->create([
-                    'comment' => $data['comment'],
-                    'user_id' => auth()->id(),
-                    'created_at' => Carbon::now('UTC'),
-                ]);
+            ->columnSpanFull()
+            ->key(fn (Contact $record): string => 'contact-comments-'.$record->getKey());
+    }
 
-                Notification::make()
-                    ->title('Комментарий добавлен')
-                    ->success()
-                    ->send();
+    public static function initialCommentField(): Components\Textarea
+    {
+        return Components\Textarea::make('initial_comment')
+            ->label('Комментарий')
+            ->rows(3)
+            ->columnSpanFull();
+    }
 
-                $livewire->redirect(ManagementResource::getUrl('edit', ['record' => $livewire->getRecord()]));
-            })
-            ->modalSubmitActionLabel('Добавить')
-            ->modalCancelActionLabel('Отмена');
+    public static function formSection(CommentsContext $context): SchemaComponents\Section
+    {
+        return SchemaComponents\Section::make('Комментарии')
+            ->schema([
+                static::tableComponent($context),
+                static::initialCommentField()
+                    ->visibleOn('create'),
+            ])
+            ->collapsible();
+    }
+
+    public static function infolistSection(CommentsContext $context): SchemaComponents\Section
+    {
+        return SchemaComponents\Section::make('Комментарии')
+            ->schema([
+                static::infolistTableComponent($context),
+            ])
+            ->collapsible()
+            ->columnSpanFull();
     }
 }

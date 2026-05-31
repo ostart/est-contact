@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ContactResource\Pages;
+use App\Filament\Support\ContactTableSearch;
 use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
 use App\Support\PhoneNumberHelper;
@@ -122,34 +123,6 @@ class ContactResource extends Resource
                             ])
                             ->visible(fn () => auth()->user()->hasAnyRole(['manager', 'administrator', 'superadmin'])),
                     ])->columns(2),
-
-                SchemaComponents\Section::make('Комментарии')
-                    ->schema([
-                        Components\Repeater::make('comments')
-                            ->label('')
-                            ->relationship()
-                            ->schema([
-                                Components\Placeholder::make('user_name')
-                                    ->label('Автор')
-                                    ->content(fn ($record) => $record?->user?->name ?? '—')
-                                    ->visibleOn('edit'),
-
-                                Components\Textarea::make('comment')
-                                    ->label('Комментарий')
-                                    ->required()
-                                    ->rows(3)
-                                    ->columnSpanFull(),
-
-                                Components\Hidden::make('user_id')
-                                    ->default(fn () => auth()->id()),
-                            ])
-                            ->addActionLabel('Добавить комментарий')
-                            ->deletable(false)
-                            ->reorderable(false)
-                            ->defaultItems(0)
-                            ->columnSpanFull(),
-                    ])
-                    ->collapsible(),
             ]);
     }
 
@@ -166,7 +139,9 @@ class ContactResource extends Resource
             ->columns([
                 Columns\TextColumn::make('full_name')
                     ->label('ФИО')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): void {
+                        ContactTableSearch::applyLike($query, 'full_name', $search);
+                    })
                     ->sortable(),
 
                 PhoneDisplay::tableColumn(
@@ -180,13 +155,17 @@ class ContactResource extends Resource
 
                 Columns\TextColumn::make('email')
                     ->label('Email')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): void {
+                        ContactTableSearch::applyLike($query, 'email', $search);
+                    })
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->copyable(),
 
                 Columns\TextColumn::make('district')
                     ->label('Район')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): void {
+                        ContactTableSearch::applyLike($query, 'district', $search);
+                    })
                     ->toggleable(),
 
                 Columns\TextColumn::make('source')
