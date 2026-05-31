@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Contact;
+use App\Models\ContactComment;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Models\UserWarning;
@@ -15,6 +16,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 
 class ActivityLogPage extends Page implements HasTable
@@ -57,14 +59,20 @@ class ActivityLogPage extends Page implements HasTable
                     ->label('Объект операции')
                     ->getStateUsing(function (Activity $record) {
                         $subject = $record->subject;
-                        if (!$subject) {
+                        if (! $subject) {
+                            if ($record->subject_type === ContactComment::class) {
+                                return static::formatContactCommentSubjectLabel($record);
+                            }
+
                             return $record->subject_id ? "#{$record->subject_id}" : '—';
                         }
+
                         return match (get_class($subject)) {
-                            \App\Models\Contact::class => $subject->full_name ?? "#{$record->subject_id}",
-                            \App\Models\User::class => $subject->name ?? $subject->email ?? "#{$record->subject_id}",
-                            \App\Models\SystemSetting::class => $subject->key ?? "#{$record->subject_id}",
-                            \App\Models\UserWarning::class => $subject->user?->name ?? "Пользователь #{$subject->user_id}",
+                            Contact::class => $subject->full_name ?? "#{$record->subject_id}",
+                            ContactComment::class => static::formatContactCommentSubjectLabel($record, $subject),
+                            User::class => $subject->name ?? $subject->email ?? "#{$record->subject_id}",
+                            SystemSetting::class => $subject->key ?? "#{$record->subject_id}",
+                            UserWarning::class => $subject->user?->name ?? "Пользователь #{$subject->user_id}",
                             default => $subject->name ?? $subject->full_name ?? $subject->key ?? "#{$record->subject_id}",
                         };
                     })
@@ -117,6 +125,18 @@ class ActivityLogPage extends Page implements HasTable
                                             });
                                         });
                                     });
+                            })
+                            ->orWhereHasMorph('subject', [ContactComment::class], function (Builder $q) use ($search) {
+                                $like = '%'.addcslashes($search, '%_\\').'%';
+                                $q->where('comment', 'like', $like)
+                                    ->orWhereHas('contact', function (Builder $contactQuery) use ($like) {
+                                        $contactQuery->where('full_name', 'like', $like);
+                                    });
+                            })
+                            ->orWhere(function (Builder $q) use ($search) {
+                                $like = '%'.addcslashes($search, '%_\\').'%';
+                                $q->where('subject_type', ContactComment::class)
+                                    ->where('properties->old->comment', 'like', $like);
                             });
                         });
                     }),
@@ -134,19 +154,21 @@ class ActivityLogPage extends Page implements HasTable
                             return '—';
                         }
                         return match ($state) {
-                            'App\Models\Contact' => 'Контакт',
-                            'App\Models\User' => 'Пользователь',
-                            'App\Models\SystemSetting' => 'Настройка',
-                            'App\Models\UserWarning' => 'Предупреждение',
+                            Contact::class => 'Контакт',
+                            ContactComment::class => 'Комментарий',
+                            User::class => 'Пользователь',
+                            SystemSetting::class => 'Настройка',
+                            UserWarning::class => 'Предупреждение',
                             default => class_basename($state),
                         };
                     })
                     ->badge()
                     ->color(fn ($state) => match ($state) {
-                        'App\Models\Contact' => 'primary',
-                        'App\Models\User' => 'success',
-                        'App\Models\SystemSetting' => 'warning',
-                        'App\Models\UserWarning' => 'danger',
+                        Contact::class => 'primary',
+                        ContactComment::class => 'gray',
+                        User::class => 'success',
+                        SystemSetting::class => 'warning',
+                        UserWarning::class => 'danger',
                         default => 'gray',
                     }),
 
@@ -244,6 +266,7 @@ class ActivityLogPage extends Page implements HasTable
                     ->label('Модель')
                     ->options([
                         Contact::class => 'Контакт',
+                        ContactComment::class => 'Комментарий',
                         User::class => 'Пользователь',
                         SystemSetting::class => 'Настройка',
                         UserWarning::class => 'Предупреждение',
@@ -265,5 +288,29 @@ class ActivityLogPage extends Page implements HasTable
             ->poll('30s')
             ->emptyStateHeading('Нет записей')
             ->emptyStateDescription('Журнал аудита пуст');
+    }
+
+    protected static function formatContactCommentSubjectLabel(Activity $record, ?ContactComment $comment = null): string
+    {
+        $comment ??= $record->subject instanceof ContactComment ? $record->subject : null;
+
+        $properties = is_array($record->properties) ? $record->properties : [];
+        $commentText = $comment?->comment
+            ?? ($properties['old']['comment'] ?? null)
+            ?? ($properties['attributes']['comment'] ?? null);
+
+        $contactId = $comment?->contact_id
+            ?? ($properties['old']['contact_id'] ?? null)
+            ?? ($properties['attributes']['contact_id'] ?? null);
+
+        $contactName = $comment?->contact?->full_name
+            ?? ($contactId ? Contact::query()->whereKey($contactId)->value('full_name') : null)
+            ?? ($contactId ? "Контакт #{$contactId}" : 'Контакт');
+
+        if (blank($commentText)) {
+            return $contactName;
+        }
+
+        return $contactName.' — '.Str::limit($commentText, 40);
     }
 }

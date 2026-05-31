@@ -65,8 +65,11 @@ class ContactCommentsTable extends Component implements HasActions, HasSchemas, 
 
                 TextColumn::make('comment')
                     ->label('Комментарий')
-                    ->wrap()
-                    ->limit(120),
+                    ->limit(ContactComment::TABLE_DISPLAY_LIMIT)
+                    ->lineClamp(1)
+                    ->wrap(false)
+                    ->tooltip(fn (ContactComment $record): ?string => filled($record->comment) ? $record->comment : null)
+                    ->grow(),
             ])
             ->recordActions($this->getRecordActions())
             ->headerActions($this->getHeaderActions())

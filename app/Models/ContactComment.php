@@ -4,9 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class ContactComment extends Model
 {
+    use LogsActivity;
+
+    public const TABLE_DISPLAY_LIMIT = 20;
+
     protected $fillable = [
         'contact_id',
         'user_id',
@@ -17,6 +23,14 @@ class ContactComment extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['comment'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
 
     public function contact(): BelongsTo
     {
