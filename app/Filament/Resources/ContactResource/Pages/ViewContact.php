@@ -36,7 +36,7 @@ class ViewContact extends ViewRecord
         
         // Лидер может изменять статус если:
         // 1. Контакт NOT_PROCESSED (может взять в работу)
-        // 2. Он назначен ответственным (включая финальные — переоткрытие или смена результата)
+        // 2. Он назначен ответственным (из финальных — только «В работе» или другой финальный статус)
         $canEditStatus = $isLeader && ($isNotProcessed || $isAssignedToCurrentUser);
 
         $takeToWorkOption = [ContactStatus::IN_PROGRESS->value => 'Взять в работу'];
@@ -185,9 +185,13 @@ class ViewContact extends ViewRecord
                                             Forms\Components\Select::make('status')
                                                 ->label('Новый статус')
                                                 ->options($availableStatuses)
-                                                ->default(fn () => $status === ContactStatus::FROZEN
-                                                    ? $this->record->statusBeforeFrozen()->value
-                                                    : ($this->record->status instanceof ContactStatus ? $this->record->status->value : $this->record->status))
+                                                ->default(fn () => match (true) {
+                                                    $status === ContactStatus::FROZEN && $isLeader => ContactStatus::IN_PROGRESS->value,
+                                                    $status === ContactStatus::FROZEN => $this->record->statusBeforeFrozen()->value,
+                                                    default => $this->record->status instanceof ContactStatus
+                                                        ? $this->record->status->value
+                                                        : $this->record->status,
+                                                })
                                                 ->required()
                                                 ->live(),
                                             ...ContactFreezeFields::schema(),

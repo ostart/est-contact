@@ -7,21 +7,38 @@ use PHPUnit\Framework\TestCase;
 
 class ContactStatusTest extends TestCase
 {
-    public function test_final_status_can_reopen_or_switch_result(): void
+    public function test_final_status_leader_can_reopen_to_in_progress_or_switch_result(): void
     {
         $this->assertSame(
-            [ContactStatus::NOT_PROCESSED, ContactStatus::FAILED],
+            [ContactStatus::IN_PROGRESS, ContactStatus::FAILED],
             ContactStatus::SUCCESS->allowedTransitions(),
         );
 
         $this->assertSame(
-            [ContactStatus::NOT_PROCESSED, ContactStatus::SUCCESS],
+            [ContactStatus::IN_PROGRESS, ContactStatus::SUCCESS],
             ContactStatus::FAILED->allowedTransitions(),
         );
 
         $this->assertTrue(ContactStatus::SUCCESS->canTransitionTo(ContactStatus::FAILED));
-        $this->assertTrue(ContactStatus::FAILED->canTransitionTo(ContactStatus::NOT_PROCESSED));
+        $this->assertTrue(ContactStatus::SUCCESS->canTransitionTo(ContactStatus::IN_PROGRESS));
+        $this->assertFalse(ContactStatus::FAILED->canTransitionTo(ContactStatus::NOT_PROCESSED));
         $this->assertFalse(ContactStatus::SUCCESS->canTransitionTo(ContactStatus::ASSIGNED));
+    }
+
+    public function test_not_processed_transition_only_for_manager(): void
+    {
+        $this->assertTrue(
+            ContactStatus::FAILED->canTransitionTo(ContactStatus::NOT_PROCESSED, forManager: true),
+        );
+        $this->assertTrue(
+            ContactStatus::IN_PROGRESS->canTransitionTo(ContactStatus::NOT_PROCESSED, forManager: true),
+        );
+        $this->assertFalse(
+            ContactStatus::IN_PROGRESS->canTransitionTo(ContactStatus::NOT_PROCESSED, forManager: false),
+        );
+        $this->assertFalse(
+            ContactStatus::ASSIGNED->canTransitionTo(ContactStatus::NOT_PROCESSED, forManager: false),
+        );
     }
 
     public function test_manager_can_return_final_contact_to_assigned(): void
@@ -51,6 +68,11 @@ class ContactStatusTest extends TestCase
     {
         $this->assertSame(
             [ContactStatus::NOT_PROCESSED, ContactStatus::IN_PROGRESS],
+            ContactStatus::ASSIGNED->allowedTransitions(forManager: true),
+        );
+
+        $this->assertSame(
+            [ContactStatus::IN_PROGRESS],
             ContactStatus::ASSIGNED->allowedTransitions(),
         );
 
@@ -63,10 +85,19 @@ class ContactStatusTest extends TestCase
     {
         $this->assertSame(
             [ContactStatus::ASSIGNED, ContactStatus::IN_PROGRESS],
+            ContactStatus::FROZEN->allowedTransitions(forManager: true),
+        );
+
+        $this->assertSame(
+            [ContactStatus::IN_PROGRESS],
             ContactStatus::FROZEN->allowedTransitions(),
         );
 
         $this->assertTrue(ContactStatus::FROZEN->canTransitionTo(ContactStatus::IN_PROGRESS));
+        $this->assertFalse(ContactStatus::FROZEN->canTransitionTo(ContactStatus::ASSIGNED));
+        $this->assertTrue(
+            ContactStatus::FROZEN->canTransitionTo(ContactStatus::ASSIGNED, forManager: true),
+        );
         $this->assertTrue(
             ContactStatus::FROZEN->canTransitionTo(ContactStatus::IN_PROGRESS, system: true),
         );
@@ -96,6 +127,11 @@ class ContactStatusTest extends TestCase
     {
         $this->assertSame(
             [ContactStatus::ASSIGNED, ContactStatus::IN_PROGRESS],
+            ContactStatus::NOT_PROCESSED->allowedTransitions(forManager: true),
+        );
+
+        $this->assertSame(
+            [ContactStatus::IN_PROGRESS],
             ContactStatus::NOT_PROCESSED->allowedTransitions(),
         );
     }

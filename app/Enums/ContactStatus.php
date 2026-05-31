@@ -94,23 +94,33 @@ enum ContactStatus: string
     public function allowedTransitions(bool $forManager = false): array
     {
         if ($this->isFinal()) {
-            $targets = [self::NOT_PROCESSED, self::SUCCESS, self::FAILED];
             if ($forManager) {
-                $targets[] = self::ASSIGNED;
+                return array_values(array_filter(
+                    [self::NOT_PROCESSED, self::ASSIGNED, self::SUCCESS, self::FAILED],
+                    fn (self $status) => $status !== $this,
+                ));
             }
 
             return array_values(array_filter(
-                $targets,
+                [self::IN_PROGRESS, self::SUCCESS, self::FAILED],
                 fn (self $status) => $status !== $this,
             ));
         }
 
+        $withNotProcessed = fn (array $targets): array => $forManager
+            ? array_merge([self::NOT_PROCESSED], $targets)
+            : $targets;
+
         return match ($this) {
-            self::NOT_PROCESSED => [self::ASSIGNED, self::IN_PROGRESS],
-            self::ASSIGNED => [self::NOT_PROCESSED, self::IN_PROGRESS],
-            self::IN_PROGRESS => [self::NOT_PROCESSED, self::FROZEN, self::SUCCESS, self::FAILED],
-            self::FROZEN => [self::ASSIGNED, self::IN_PROGRESS],
-            self::OVERDUE => [self::NOT_PROCESSED, self::ASSIGNED, self::IN_PROGRESS, self::SUCCESS, self::FAILED],
+            self::NOT_PROCESSED => $forManager
+                ? [self::ASSIGNED, self::IN_PROGRESS]
+                : [self::IN_PROGRESS],
+            self::ASSIGNED => $withNotProcessed([self::IN_PROGRESS]),
+            self::IN_PROGRESS => $withNotProcessed([self::FROZEN, self::SUCCESS, self::FAILED]),
+            self::FROZEN => $forManager
+                ? [self::ASSIGNED, self::IN_PROGRESS]
+                : [self::IN_PROGRESS],
+            self::OVERDUE => $withNotProcessed([self::ASSIGNED, self::IN_PROGRESS, self::SUCCESS, self::FAILED]),
             default => [],
         };
     }
