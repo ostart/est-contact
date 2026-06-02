@@ -10,7 +10,9 @@ use Filament\Enums\ThemeMode;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Width;
 use Filament\View\PanelsRenderHook;
+use Illuminate\Support\HtmlString;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -45,6 +47,59 @@ class AdminPanelProvider extends PanelProvider
                 scopes: \App\Filament\Pages\EditProfile::class,
             )
             ->defaultThemeMode(ThemeMode::Light)
+            ->sidebarWidth('14rem')
+            ->maxContentWidth(Width::Full)
+            ->renderHook(
+                PanelsRenderHook::STYLES_AFTER,
+                fn (): HtmlString => new HtmlString(<<<'HTML'
+                    <style>
+                        .fi-sidebar .fi-sidebar-nav {
+                            padding-inline: 0.75rem;
+                            padding-block: 1rem;
+                            row-gap: 0.5rem;
+                        }
+
+                        .fi-sidebar .fi-sidebar-item-btn {
+                            gap: 0.5rem;
+                            justify-content: flex-start;
+                            padding-block: 0.5rem;
+                            padding-inline: 0.5rem;
+                        }
+
+                        .fi-sidebar .fi-sidebar-item-label {
+                            flex: 1 1 auto;
+                            min-width: 0;
+                        }
+
+                        .fi-sidebar .fi-sidebar-item-badge-ctn {
+                            margin-inline-start: auto;
+                            flex-shrink: 0;
+                        }
+
+                        @media (min-width: 1024px) {
+                            .fi-body-has-navigation:not(.fi-body-has-top-navigation) .fi-main {
+                                padding-inline-start: 0.5rem;
+                                padding-inline-end: 1rem;
+                            }
+
+                            .fi-body-has-navigation:not(.fi-body-has-top-navigation) .fi-page-header-main-ctn {
+                                padding-block-start: 1.5rem;
+                                padding-block-end: 1rem;
+                            }
+                        }
+
+                        .fi-users-contact-filters-col-label {
+                            display: inline-block;
+                            line-height: 1.05;
+                            text-align: center;
+                        }
+
+                        .fi-users-contact-filters-col-header .fi-ta-header-cell-sort-btn {
+                            align-items: center;
+                        }
+                    </style>
+                    HTML),
+            )
             ->favicon(asset('favicon.ico'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

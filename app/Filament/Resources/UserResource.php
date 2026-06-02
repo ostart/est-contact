@@ -263,7 +263,11 @@ class UserResource extends Resource
                     ->sortable(),
 
                 Columns\IconColumn::make('can_use_contact_filters')
-                    ->label('Фильтры контактов')
+                    ->label(new HtmlString('<span class="fi-users-contact-filters-col-label">Фильтры<br>контактов</span>'))
+                    ->wrapHeader()
+                    ->extraHeaderAttributes([
+                        'class' => 'fi-users-contact-filters-col-header',
+                    ])
                     ->getStateUsing(fn (User $record): ?bool => $record->hasRole('leader')
                         ? (bool) $record->can_use_contact_filters
                         : null)
