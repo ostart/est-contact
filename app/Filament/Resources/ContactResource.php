@@ -28,11 +28,11 @@ class ContactResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-users';
 
-    protected static ?string $navigationLabel = 'Контакты';
+    protected static ?string $navigationLabel = 'Мои контакты';
 
     protected static ?string $modelLabel = 'контакт';
 
-    protected static ?string $pluralModelLabel = 'контакты';
+    protected static ?string $pluralModelLabel = 'Мои контакты';
 
     protected static ?int $navigationSort = 1;
 
@@ -44,7 +44,7 @@ class ContactResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return 'Контакты';
+        return 'Мои контакты';
     }
 
     public static function form(Schema $schema): Schema
