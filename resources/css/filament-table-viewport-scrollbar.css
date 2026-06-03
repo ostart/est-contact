@@ -2,14 +2,26 @@
     position: fixed;
     bottom: env(safe-area-inset-bottom, 0);
     z-index: 35;
+    display: block;
     overflow-x: auto;
     overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
     height: 1.75rem;
     background: transparent;
     border: none;
     box-shadow: none;
+    outline: none;
+    transform: translateZ(0);
     scrollbar-width: auto;
     scrollbar-color: rgb(107 114 128) rgb(229 231 235);
+}
+
+.fi-ta-viewport-scrollbar:focus,
+.fi-ta-viewport-scrollbar:focus-visible {
+    outline: none;
+    box-shadow: none;
 }
 
 .fi-ta-viewport-scrollbar::-webkit-scrollbar {
@@ -48,15 +60,58 @@
     background-color: rgb(209 213 219);
 }
 
+.fi-ta-viewport-scrollbar--hidden {
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+}
+
 .fi-ta-viewport-scrollbar__inner {
     height: 1px;
     pointer-events: none;
 }
 
-.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-active {
+/*
+ * Hide the native horizontal scrollbar on Filament tables.
+ * Desktop: fixed viewport mirror is the scrollbar. Mobile: swipe the table (no mirror bar).
+ */
+.fi-ta .fi-ta-content-ctn {
+    scrollbar-gutter: stable;
     scrollbar-width: none;
 }
 
-.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-active::-webkit-scrollbar {
+.fi-ta .fi-ta-content-ctn::-webkit-scrollbar {
+    height: 0;
     display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .fi-ta .fi-ta-content-ctn {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+    }
+
+    .fi-ta-viewport-scrollbar {
+        display: none !important;
+    }
+}
+
+.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-pending,
+.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-active {
+    scrollbar-gutter: stable;
+    scrollbar-width: none;
+}
+
+.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-pending::-webkit-scrollbar,
+.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-active::-webkit-scrollbar {
+    height: 0;
+    display: none;
+}
+
+.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-pending:focus,
+.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-pending:focus-visible,
+.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-active:focus,
+.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-active:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
 }
