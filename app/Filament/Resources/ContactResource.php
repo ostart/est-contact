@@ -189,13 +189,13 @@ class ContactResource extends Resource
 
                 Columns\TextColumn::make('created_at')
                     ->label('Создан')
-                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state))
+                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state, withSeconds: true))
                     ->sortable()
                     ->toggleable(),
 
                 Columns\TextColumn::make('updated_at')
                     ->label('Обновлен')
-                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state))
+                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state, withSeconds: true))
                     ->sortable()
                     ->toggleable(),
             ]);
@@ -253,6 +253,7 @@ class ContactResource extends Resource
             ->toolbarActions([
                 // Нет массовых действий для лидеров
             ])
+            ->reorderableColumns()
             ->defaultKeySort(false);
     }
 

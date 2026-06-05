@@ -230,13 +230,13 @@ class ManagementResource extends Resource
 
                 Columns\TextColumn::make('created_at')
                     ->label('Создан')
-                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state))
+                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state, withSeconds: true))
                     ->sortable()
                     ->toggleable(),
 
                 Columns\TextColumn::make('updated_at')
                     ->label('Обновлен')
-                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state))
+                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state, withSeconds: true))
                     ->sortable()
                     ->toggleable(),
             ])
@@ -283,6 +283,7 @@ class ManagementResource extends Resource
                         ->successRedirectUrl(ManagementResource::getUrl('index')),
                 ]),
             ])
+            ->reorderableColumns()
             ->defaultKeySort(false);
     }
 
