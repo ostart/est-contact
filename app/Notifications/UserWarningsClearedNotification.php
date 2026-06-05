@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Filament\Support\DatabaseNotificationActions;
 use App\Models\User;
-use Filament\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -13,8 +13,7 @@ class UserWarningsClearedNotification extends Notification
     public function __construct(
         public bool $hadWarnings = true,
         public bool $hadBan = false,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, string>
@@ -33,7 +32,7 @@ class UserWarningsClearedNotification extends Notification
     {
         $mail = (new MailMessage)
             ->subject($this->mailSubject())
-            ->greeting('Здравствуйте, ' . $notifiable->name . '!');
+            ->greeting('Здравствуйте, '.$notifiable->name.'!');
 
         foreach ($this->descriptionLines() as $line) {
             $mail->line($line);
@@ -55,10 +54,7 @@ class UserWarningsClearedNotification extends Notification
             ->body(implode(' ', $this->descriptionLines()))
             ->icon('heroicon-o-check-badge')
             ->actions([
-                Action::make('mark_as_read')
-                    ->label('Прочитано')
-                    ->button()
-                    ->markAsRead(),
+                DatabaseNotificationActions::markAsRead(),
             ])
             ->getDatabaseMessage();
     }

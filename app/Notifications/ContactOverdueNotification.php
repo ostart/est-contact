@@ -3,10 +3,10 @@
 namespace App\Notifications;
 
 use App\Filament\Resources\ContactResource;
+use App\Filament\Support\DatabaseNotificationActions;
 use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
 use App\Models\User;
-use Filament\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -18,8 +18,7 @@ class ContactOverdueNotification extends Notification
 {
     public function __construct(
         public Contact $contact
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, string>
@@ -38,12 +37,12 @@ class ContactOverdueNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Контакт просрочен по обработке')
-            ->greeting('Здравствуйте, ' . $notifiable->name . '!')
+            ->greeting('Здравствуйте, '.$notifiable->name.'!')
             ->line('Срок обработки назначенного вам контакта истёк, статус переведён в «Просрочен».')
-            ->line('**Контакт:** ' . $this->contact->full_name)
+            ->line('**Контакт:** '.$this->contact->full_name)
             ->line('**Телефон:** '.PhoneDisplay::markdown($this->contact->phone))
-            ->when($this->contact->email, fn ($mail) => $mail->line('**Email:** ' . $this->contact->email))
-            ->when($this->contact->district, fn ($mail) => $mail->line('**Район:** ' . $this->contact->district))
+            ->when($this->contact->email, fn ($mail) => $mail->line('**Email:** '.$this->contact->email))
+            ->when($this->contact->district, fn ($mail) => $mail->line('**Район:** '.$this->contact->district))
             ->action('Просмотреть контакт', ContactResource::getUrl('view', ['record' => $this->contact]))
             ->line('Спасибо за использование нашего приложения!');
     }
@@ -55,9 +54,9 @@ class ContactOverdueNotification extends Notification
     {
         $viewUrl = ContactResource::getUrl('view', ['record' => $this->contact]);
 
-        $body = $this->contact->full_name . ' · ' . $this->contact->phone;
+        $body = $this->contact->full_name.' · '.$this->contact->phone;
         if ($this->contact->district) {
-            $body .= ' · ' . $this->contact->district;
+            $body .= ' · '.$this->contact->district;
         }
 
         return FilamentNotification::make()
@@ -66,14 +65,8 @@ class ContactOverdueNotification extends Notification
             ->body($body)
             ->icon('heroicon-o-clock')
             ->actions([
-                Action::make('view_contact')
-                    ->label('Просмотреть')
-                    ->button()
-                    ->url($viewUrl),
-                Action::make('mark_as_read')
-                    ->label('Прочитано')
-                    ->button()
-                    ->markAsRead(),
+                DatabaseNotificationActions::viewUrl('view_contact', DatabaseNotificationActions::VIEW_LABEL, $viewUrl),
+                DatabaseNotificationActions::markAsRead(),
             ])
             ->getDatabaseMessage();
     }

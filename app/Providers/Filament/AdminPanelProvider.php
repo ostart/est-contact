@@ -139,7 +139,9 @@ class AdminPanelProvider extends PanelProvider
                 \App\Http\Middleware\EnsureUserIsApproved::class,
             ])
             ->databaseNotifications()
+            ->databaseNotificationsLivewireComponent(\App\Filament\Livewire\DatabaseNotifications::class)
             ->databaseNotificationsPolling('30s')
+            ->lazyLoadedDatabaseNotifications(false)
             ->spa();
     }
 }

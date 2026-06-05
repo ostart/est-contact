@@ -3,10 +3,10 @@
 namespace App\Notifications;
 
 use App\Filament\Resources\ContactResource;
+use App\Filament\Support\DatabaseNotificationActions;
 use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
 use App\Models\User;
-use Filament\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -22,8 +22,7 @@ class ContactAssignedNotification extends Notification
      */
     public function __construct(
         public Contact $contact
-    ) {
-    }
+    ) {}
 
     /**
      * Get the notification's delivery channels.
@@ -48,12 +47,12 @@ class ContactAssignedNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Вам назначен новый контакт')
-            ->greeting('Здравствуйте, ' . $notifiable->name . '!')
+            ->greeting('Здравствуйте, '.$notifiable->name.'!')
             ->line('Вам назначен новый контакт для обработки.')
-            ->line('**Контакт:** ' . $this->contact->full_name)
+            ->line('**Контакт:** '.$this->contact->full_name)
             ->line('**Телефон:** '.PhoneDisplay::markdown($this->contact->phone))
-            ->when($this->contact->email, fn($mail) => $mail->line('**Email:** ' . $this->contact->email))
-            ->when($this->contact->district, fn($mail) => $mail->line('**Район:** ' . $this->contact->district))
+            ->when($this->contact->email, fn ($mail) => $mail->line('**Email:** '.$this->contact->email))
+            ->when($this->contact->district, fn ($mail) => $mail->line('**Район:** '.$this->contact->district))
             ->action('Просмотреть контакт', ContactResource::getUrl('view', ['record' => $this->contact]))
             ->line('Спасибо за использование нашего приложения!');
     }
@@ -65,9 +64,9 @@ class ContactAssignedNotification extends Notification
     {
         $viewUrl = ContactResource::getUrl('view', ['record' => $this->contact]);
 
-        $body = $this->contact->full_name . ' · ' . $this->contact->phone;
+        $body = $this->contact->full_name.' · '.$this->contact->phone;
         if ($this->contact->district) {
-            $body .= ' · ' . $this->contact->district;
+            $body .= ' · '.$this->contact->district;
         }
 
         return FilamentNotification::make()
@@ -76,16 +75,9 @@ class ContactAssignedNotification extends Notification
             ->body($body)
             ->icon('heroicon-o-user-plus')
             ->actions([
-                Action::make('view_contact')
-                    ->label('Просмотреть')
-                    ->button()
-                    ->url($viewUrl),
-                Action::make('mark_as_read')
-                    ->label('Прочитано')
-                    ->button()
-                    ->markAsRead(),
+                DatabaseNotificationActions::viewUrl('view_contact', DatabaseNotificationActions::VIEW_LABEL, $viewUrl),
+                DatabaseNotificationActions::markAsRead(),
             ])
             ->getDatabaseMessage();
     }
 }
-

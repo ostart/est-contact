@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Filament\Support\DatabaseNotificationActions;
 use App\Models\User;
-use Filament\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -12,8 +12,7 @@ class UserWarningNotification extends Notification
 {
     public function __construct(
         public string $message
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, string>
@@ -32,7 +31,7 @@ class UserWarningNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Предупреждение от администратора')
-            ->greeting('Здравствуйте, ' . $notifiable->name . '!')
+            ->greeting('Здравствуйте, '.$notifiable->name.'!')
             ->line('Вы получили предупреждение от администратора системы «БВ Контакт».')
             ->line('**Текст предупреждения:**')
             ->line($this->message)
@@ -51,10 +50,7 @@ class UserWarningNotification extends Notification
             ->body($this->message)
             ->icon('heroicon-o-exclamation-triangle')
             ->actions([
-                Action::make('mark_as_read')
-                    ->label('Прочитано')
-                    ->button()
-                    ->markAsRead(),
+                DatabaseNotificationActions::markAsRead(),
             ])
             ->getDatabaseMessage();
     }

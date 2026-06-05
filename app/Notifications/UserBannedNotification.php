@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Filament\Support\DatabaseNotificationActions;
 use App\Models\User;
-use Filament\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -12,8 +12,7 @@ class UserBannedNotification extends Notification
 {
     public function __construct(
         public ?string $reason = null
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, string>
@@ -32,7 +31,7 @@ class UserBannedNotification extends Notification
     {
         $mail = (new MailMessage)
             ->subject('Ваш аккаунт заблокирован')
-            ->greeting('Здравствуйте, ' . $notifiable->name . '!')
+            ->greeting('Здравствуйте, '.$notifiable->name.'!')
             ->line('Ваш аккаунт в системе «БВ Контакт» был заблокирован администратором.');
 
         if ($this->reason) {
@@ -56,10 +55,7 @@ class UserBannedNotification extends Notification
             ->body($this->reason ?: 'Обратитесь к администратору за подробностями.')
             ->icon('heroicon-o-no-symbol')
             ->actions([
-                Action::make('mark_as_read')
-                    ->label('Прочитано')
-                    ->button()
-                    ->markAsRead(),
+                DatabaseNotificationActions::markAsRead(),
             ])
             ->getDatabaseMessage();
     }

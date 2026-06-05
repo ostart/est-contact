@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Filament\Support\DatabaseNotificationActions;
 use App\Models\User;
-use Filament\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -27,7 +27,7 @@ class UserUnbannedNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Ваш аккаунт разблокирован')
-            ->greeting('Здравствуйте, ' . $notifiable->name . '!')
+            ->greeting('Здравствуйте, '.$notifiable->name.'!')
             ->line('Ваш аккаунт в системе «БВ Контакт» был разблокирован.')
             ->line('Доступ к системе восстановлен. Вы можете войти и продолжить работу.')
             ->action('Войти в систему', url('/admin/login'))
@@ -45,10 +45,7 @@ class UserUnbannedNotification extends Notification
             ->body('Доступ к системе восстановлен.')
             ->icon('heroicon-o-check-circle')
             ->actions([
-                Action::make('mark_as_read')
-                    ->label('Прочитано')
-                    ->button()
-                    ->markAsRead(),
+                DatabaseNotificationActions::markAsRead(),
             ])
             ->getDatabaseMessage();
     }

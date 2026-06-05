@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Filament\Support\DatabaseNotificationActions;
 use App\Models\User;
-use Filament\Actions\Action;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -27,7 +27,7 @@ class UserApprovedNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Доступ в систему разрешен')
-            ->greeting('Здравствуйте, ' . $notifiable->name . '!')
+            ->greeting('Здравствуйте, '.$notifiable->name.'!')
             ->line('Администратор одобрил вашу заявку на регистрацию в системе «БВ Контакт».')
             ->line('Теперь вы можете войти в систему и начать работу.')
             ->action('Войти в систему', url('/admin'))
@@ -45,10 +45,7 @@ class UserApprovedNotification extends Notification
             ->body('Администратор одобрил вашу заявку. Теперь вы можете пользоваться системой.')
             ->icon('heroicon-o-check-circle')
             ->actions([
-                Action::make('mark_as_read')
-                    ->label('Прочитано')
-                    ->button()
-                    ->markAsRead(),
+                DatabaseNotificationActions::markAsRead(),
             ])
             ->getDatabaseMessage();
     }
