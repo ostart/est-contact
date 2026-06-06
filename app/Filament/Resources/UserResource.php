@@ -144,6 +144,21 @@ class UserResource extends Resource
                                 return is_array($roles) && in_array((int) $leaderRoleId, array_map('intval', $roles), true);
                             }),
 
+                        Components\Toggle::make('can_use_map')
+                            ->label('Разрешить карту')
+                            ->helperText('Включено — лидер видит кнопку «Карта» в списке контактов. Выключено — кнопка скрыта.')
+                            ->default(false)
+                            ->visible(function ($get): bool {
+                                $leaderRoleId = Role::query()->where('name', 'leader')->value('id');
+                                if ($leaderRoleId === null) {
+                                    return false;
+                                }
+
+                                $roles = $get('roles');
+
+                                return is_array($roles) && in_array((int) $leaderRoleId, array_map('intval', $roles), true);
+                            }),
+
                         Components\Toggle::make('is_approved')
                             ->label('Доступ в систему разрешен')
                             ->default(false),
@@ -266,6 +281,14 @@ class UserResource extends Resource
                     ->label('Фильтры')
                     ->getStateUsing(fn (User $record): ?bool => $record->hasRole('leader')
                         ? (bool) $record->can_use_contact_filters
+                        : null)
+                    ->boolean()
+                    ->sortable(),
+
+                Columns\IconColumn::make('can_use_map')
+                    ->label('Карта')
+                    ->getStateUsing(fn (User $record): ?bool => $record->hasRole('leader')
+                        ? (bool) $record->can_use_map
                         : null)
                     ->boolean()
                     ->sortable(),

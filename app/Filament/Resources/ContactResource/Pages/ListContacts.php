@@ -22,9 +22,14 @@ class ListContacts extends ListRecords implements PersistsContactTablePreference
 
     protected function getHeaderActions(): array
     {
-        return [
+        $actions = [
             ContactTablePreferencesAction::sortAction(),
-            YandexMapAction::make(),
         ];
+
+        if (auth()->user()->can_use_map) {
+            $actions[] = YandexMapAction::make();
+        }
+
+        return $actions;
     }
 }
