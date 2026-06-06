@@ -289,7 +289,11 @@ class ContactResource extends Resource
     {
         if (auth()->user()->hasRole('leader')) {
             return (string) Contact::where('assigned_leader_id', auth()->id())
-                ->whereNotIn('status', [ContactStatus::SUCCESS->value, ContactStatus::FAILED->value])
+                ->whereNotIn('status', [
+                    ContactStatus::SUCCESS->value,
+                    ContactStatus::FAILED->value,
+                    ContactStatus::FROZEN->value,
+                ])
                 ->count();
         }
 
