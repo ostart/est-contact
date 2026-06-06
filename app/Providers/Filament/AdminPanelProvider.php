@@ -109,6 +109,17 @@ class AdminPanelProvider extends PanelProvider
                         .fi-users-contact-filters-col-header .fi-ta-header-cell-sort-btn {
                             align-items: center;
                         }
+
+                        .fi-contact-table-sort-modal .fi-modal-footer-actions {
+                            width: 100%;
+                            display: flex;
+                            flex-wrap: wrap;
+                            align-items: center;
+                        }
+
+                        .fi-contact-table-sort-modal .fi-modal-footer-actions > :last-child {
+                            margin-inline-start: auto;
+                        }
                     </style>
                     HTML),
             )

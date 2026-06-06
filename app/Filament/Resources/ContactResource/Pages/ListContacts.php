@@ -24,7 +24,6 @@ class ListContacts extends ListRecords implements PersistsContactTablePreference
     {
         return [
             ContactTablePreferencesAction::sortAction(),
-            ContactTablePreferencesAction::resetAction(),
             YandexMapAction::make(),
         ];
     }

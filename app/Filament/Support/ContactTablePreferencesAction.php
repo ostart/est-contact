@@ -19,6 +19,9 @@ class ContactTablePreferencesAction
             ->modalHeading('Настройка сортировки')
             ->modalDescription('Задайте порядок сортировки: сначала по одной колонке, затем по следующей и т.д. Настройки сохраняются для вашего аккаунта.')
             ->modalSubmitActionLabel('Сохранить')
+            ->extraModalWindowAttributes([
+                'class' => 'fi-contact-table-sort-modal',
+            ])
             ->fillForm(fn (PersistsContactTablePreferences $livewire): array => [
                 'sort_layers' => filled($livewire->getTableSortLayers())
                     ? $livewire->getTableSortLayers()
@@ -60,19 +63,24 @@ class ContactTablePreferencesAction
                     ->all();
 
                 $livewire->saveTableSortLayers($layers);
-            });
+            })
+            ->modalFooterActions(fn (Actions\Action $action): array => [
+                $action->getModalSubmitAction(),
+                $action->getModalCancelAction(),
+                self::resetTablePreferencesAction(),
+            ]);
     }
 
-    public static function resetAction(): Actions\Action
+    protected static function resetTablePreferencesAction(): Actions\Action
     {
         return Actions\Action::make('resetTablePreferences')
-            ->label('Сбросить вид')
-            ->icon('heroicon-o-arrow-path')
+            ->label('По умолчанию')
             ->color('gray')
             ->requiresConfirmation()
             ->modalHeading('Сбросить настройки таблицы?')
             ->modalDescription('Будут восстановлены колонки, их порядок и сортировка по умолчанию.')
             ->modalSubmitActionLabel('Сбросить')
+            ->cancelParentActions()
             ->action(fn (PersistsContactTablePreferences $livewire) => $livewire->resetAllContactTablePreferences());
     }
 

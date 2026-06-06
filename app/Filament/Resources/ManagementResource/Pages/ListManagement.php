@@ -27,7 +27,6 @@ class ListManagement extends ListRecords implements PersistsContactTablePreferen
     {
         return [
             ContactTablePreferencesAction::sortAction(),
-            ContactTablePreferencesAction::resetAction(),
             YandexMapAction::make(),
             Actions\CreateAction::make()
                 ->label('Создать')
