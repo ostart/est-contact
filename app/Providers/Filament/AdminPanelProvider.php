@@ -100,16 +100,6 @@ class AdminPanelProvider extends PanelProvider
                             }
                         }
 
-                        .fi-users-contact-filters-col-label {
-                            display: inline-block;
-                            line-height: 1.05;
-                            text-align: center;
-                        }
-
-                        .fi-users-contact-filters-col-header .fi-ta-header-cell-sort-btn {
-                            align-items: center;
-                        }
-
                         .fi-contact-table-sort-modal .fi-modal-footer-actions {
                             width: 100%;
                             display: flex;
