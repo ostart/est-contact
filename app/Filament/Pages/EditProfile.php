@@ -2,15 +2,13 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Resources\ContactResource;
 use App\Filament\Support\PhoneDisplay;
+use App\Filament\Support\UserAvatarFields;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Support\PhoneNumberHelper;
 use Filament\Actions\Action;
 use Filament\Auth\Pages\EditProfile as BaseEditProfile;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -19,8 +17,6 @@ use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\HtmlString;
 use Illuminate\Validation\Rule;
 use Closure;
 
@@ -73,62 +69,40 @@ class EditProfile extends BaseEditProfile
             ->dehydrated(false);
     }
 
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        unset($data['avatar']);
+
+        return $data;
+    }
+
+    public function persistProfileAvatar(): void
+    {
+        UserAvatarFields::persistAvatarOnProfile($this);
+    }
+
+    public function updated($propertyName): void
+    {
+        if (! is_string($propertyName) || ! str_starts_with($propertyName, 'data.avatar')) {
+            return;
+        }
+
+        $this->js('setTimeout(() => $wire.call("persistProfileAvatar"), 500)');
+    }
+
     protected function getAvatarDisplayComponent(): Component
     {
-        return Placeholder::make('current_avatar')
-            ->label('Текущее фото')
-            ->content(function () {
-                $user = auth()->user()->fresh();
-                if ($user->avatar) {
-                    $url = Storage::disk('public')->url($user->avatar);
-                    return new HtmlString(
-                        '<img src="' . e($url) . '?t=' . time() . '" alt="Avatar" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #e5e7eb;">'
-                    );
-                }
-                return 'Фото не загружено';
-            });
+        return UserAvatarFields::displayComponent();
     }
 
     protected function getAvatarUploadComponent(): Component
     {
-        return FileUpload::make('avatar')
-            ->label('Загрузить фото')
-            ->image()
-            ->disk('public')
-            ->directory('avatars')
-            ->visibility('public')
-            ->maxSize(2048)
-            ->imageResizeMode('cover')
-            ->imageCropAspectRatio('1:1')
-            ->imageResizeTargetWidth('200')
-            ->imageResizeTargetHeight('200')
-            ->previewable(false)
-            ->openable(false)
-            ->downloadable(false)
-            ->helperText('После загрузки нажмите "Сохранить"')
-            ->visible(fn () => !auth()->user()->avatar);
+        return UserAvatarFields::uploadComponent();
     }
 
     protected function getAvatarDeleteAction(): Component
     {
-        return Actions::make([
-            Action::make('delete_avatar')
-                ->label('Удалить фото')
-                ->color('danger')
-                ->icon('heroicon-o-trash')
-                ->requiresConfirmation()
-                ->modalHeading('Удалить фото?')
-                ->modalDescription('Вы уверены, что хотите удалить фотографию профиля?')
-                ->modalSubmitActionLabel('Да, удалить')
-                ->action(function () {
-                    $user = auth()->user();
-                    if ($user->avatar) {
-                        Storage::disk('public')->delete($user->avatar);
-                        $user->update(['avatar' => null]);
-                    }
-                    $this->redirect(Filament::getCurrentPanel()->getProfileUrl());
-                }),
-        ])->visible(fn () => (bool) auth()->user()->avatar);
+        return UserAvatarFields::deleteActionComponent();
     }
 
     protected function getPhoneFormComponent(): Component

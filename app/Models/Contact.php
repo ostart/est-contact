@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
@@ -21,8 +22,27 @@ class Contact extends Model
         'source' => 'temple',
     ];
 
+    protected static function booted(): void
+    {
+        static::updating(function (Contact $contact): void {
+            if ($contact->isDirty('photo')) {
+                $oldPhoto = $contact->getOriginal('photo');
+                if ($oldPhoto) {
+                    Storage::disk('public')->delete($oldPhoto);
+                }
+            }
+        });
+
+        static::deleting(function (Contact $contact): void {
+            if ($contact->photo) {
+                Storage::disk('public')->delete($contact->photo);
+            }
+        });
+    }
+
     protected $fillable = [
         'full_name',
+        'photo',
         'phone',
         'email',
         'district',
@@ -57,7 +77,7 @@ class Contact extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['full_name', 'phone', 'email', 'district', 'source', 'status', 'frozen_until', 'assigned_leader_id'])
+            ->logOnly(['full_name', 'photo', 'phone', 'email', 'district', 'source', 'status', 'frozen_until', 'assigned_leader_id'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }

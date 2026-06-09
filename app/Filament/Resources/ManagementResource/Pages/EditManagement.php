@@ -5,6 +5,7 @@ namespace App\Filament\Resources\ManagementResource\Pages;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ManagementResource;
 use App\Filament\Support\ContactFreezeFields;
+use App\Filament\Support\ContactPhotoFields;
 use Carbon\Carbon;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -21,6 +22,20 @@ class EditManagement extends EditRecord
             Actions\DeleteAction::make()
                 ->successRedirectUrl(ManagementResource::getUrl('index')),
         ];
+    }
+
+    public function persistContactPhoto(): void
+    {
+        ContactPhotoFields::persistPhotoOnEdit($this);
+    }
+
+    public function updated($propertyName): void
+    {
+        if (! is_string($propertyName) || ! str_starts_with($propertyName, 'data.photo')) {
+            return;
+        }
+
+        $this->js('setTimeout(() => $wire.call("persistContactPhoto"), 500)');
     }
 
     protected function mutateFormDataBeforeFill(array $data): array

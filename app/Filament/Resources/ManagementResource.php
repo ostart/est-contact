@@ -9,6 +9,7 @@ use App\Filament\Resources\ManagementResource\Pages;
 use App\Filament\Support\ContactTableSearch;
 use App\Filament\Support\ContactCommentsSection;
 use App\Filament\Support\ContactFreezeFields;
+use App\Filament\Support\ContactPhotoFields;
 use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
 use App\Support\PhoneNumberHelper;
@@ -59,62 +60,72 @@ class ManagementResource extends Resource
     {
         return $schema
             ->components([
-                SchemaComponents\Section::make('Основная информация')
+                SchemaComponents\Section::make()
                     ->schema([
-                        Components\TextInput::make('full_name')
-                            ->label('ФИО')
-                            ->required()
-                            ->maxLength(255),
+                        SchemaComponents\Section::make('Основная информация')
+                            ->schema([
+                                Components\TextInput::make('full_name')
+                                    ->label('ФИО')
+                                    ->required()
+                                    ->maxLength(255),
 
-                        PhoneDisplay::textInput(
-                            Components\TextInput::make('phone')
-                                ->label('Телефон')
-                                ->required()
-                                ->maxLength(32)
-                                ->tel()
-                                ->telRegex('/^[0-9\s\+\-\(\)]+$/')
-                                ->rules([
-                                    Rule::phone()->country(PhoneNumberHelper::CONTACT_REGIONS),
-                                ])
-                                ->rule(static function (Field $component): Closure {
-                                    return function (string $attribute, mixed $value, Closure $fail) use ($component): void {
-                                        if (! filled($value)) {
-                                            return;
-                                        }
-                                        $e164 = PhoneNumberHelper::normalize($value, PhoneNumberHelper::CONTACT_REGIONS);
-                                        if ($e164 === null) {
-                                            return;
-                                        }
-                                        $query = Contact::query()->where('phone', $e164);
-                                        $record = $component->getRecord();
-                                        if ($record && $record->getKey()) {
-                                            $query->whereKeyNot($record->getKey());
-                                        }
-                                        if ($query->exists()) {
-                                            $fail('Контакт с таким номером телефона уже существует.');
-                                        }
-                                    };
-                                })
-                                ->helperText('Номер в международном формате: РФ и страны СНГ (+7 …), США (+1 …). После сохранения хранится в формате E.164.'),
-                        ),
+                                PhoneDisplay::textInput(
+                                    Components\TextInput::make('phone')
+                                        ->label('Телефон')
+                                        ->required()
+                                        ->maxLength(32)
+                                        ->tel()
+                                        ->telRegex('/^[0-9\s\+\-\(\)]+$/')
+                                        ->rules([
+                                            Rule::phone()->country(PhoneNumberHelper::CONTACT_REGIONS),
+                                        ])
+                                        ->rule(static function (Field $component): Closure {
+                                            return function (string $attribute, mixed $value, Closure $fail) use ($component): void {
+                                                if (! filled($value)) {
+                                                    return;
+                                                }
+                                                $e164 = PhoneNumberHelper::normalize($value, PhoneNumberHelper::CONTACT_REGIONS);
+                                                if ($e164 === null) {
+                                                    return;
+                                                }
+                                                $query = Contact::query()->where('phone', $e164);
+                                                $record = $component->getRecord();
+                                                if ($record && $record->getKey()) {
+                                                    $query->whereKeyNot($record->getKey());
+                                                }
+                                                if ($query->exists()) {
+                                                    $fail('Контакт с таким номером телефона уже существует.');
+                                                }
+                                            };
+                                        })
+                                        ->helperText('Номер в международном формате: РФ и страны СНГ (+7 …), США (+1 …). После сохранения хранится в формате E.164.'),
+                                ),
 
-                        Components\TextInput::make('email')
-                            ->label('Email')
-                            ->email('Некорректный формат email')
-                            ->nullable()
-                            ->maxLength(255),
+                                Components\TextInput::make('email')
+                                    ->label('Email')
+                                    ->email('Некорректный формат email')
+                                    ->nullable()
+                                    ->maxLength(255),
 
-                        Components\TextInput::make('district')
-                            ->label('Район')
-                            ->maxLength(255),
+                                Components\TextInput::make('district')
+                                    ->label('Район')
+                                    ->maxLength(255),
 
-                        Components\Select::make('source')
-                            ->label('Источник')
-                            ->options(ContactSource::options())
-                            ->default(ContactSource::TEMPLE->value)
-                            ->required()
-                            ->native(false),
-                    ])->columns(2),
+                                Components\Select::make('source')
+                                    ->label('Источник')
+                                    ->options(ContactSource::options())
+                                    ->default(ContactSource::TEMPLE->value)
+                                    ->required()
+                                    ->native(false),
+                            ])
+                            ->columns(2)
+                            ->columnSpan(['default' => 'full', 'lg' => 1]),
+
+                        ContactPhotoFields::formSection()
+                            ->columnSpan(['default' => 'full', 'lg' => 1]),
+                    ])
+                    ->columns(['default' => 1, 'lg' => 2])
+                    ->columnSpanFull(),
 
                 ContactCommentsSection::formSection(CommentsContext::ManagerEdit),
 
@@ -184,6 +195,8 @@ class ManagementResource extends Resource
                         ContactTableSearch::applyLike($query, 'full_name', $search);
                     })
                     ->sortable(),
+
+                ContactPhotoFields::tableColumn(),
 
                 PhoneDisplay::tableColumn(
                     Columns\TextColumn::make('phone')

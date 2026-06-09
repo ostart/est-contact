@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ContactResource\Pages;
+use App\Filament\Support\ContactPhotoFields;
 use App\Filament\Support\ContactTableSearch;
 use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
@@ -143,6 +144,8 @@ class ContactResource extends Resource
                         ContactTableSearch::applyLike($query, 'full_name', $search);
                     })
                     ->sortable(),
+
+                ContactPhotoFields::tableColumn(),
 
                 PhoneDisplay::tableColumn(
                     Columns\TextColumn::make('phone')

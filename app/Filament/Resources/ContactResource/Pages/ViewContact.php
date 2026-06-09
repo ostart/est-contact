@@ -7,6 +7,7 @@ use App\Enums\ContactStatus;
 use App\Filament\Resources\ContactResource;
 use App\Filament\Support\ContactCommentsSection;
 use App\Filament\Support\ContactFreezeFields;
+use App\Filament\Support\ContactPhotoFields;
 use App\Filament\Support\PhoneDisplay;
 use Filament\Forms;
 use Filament\Infolists\Components;
@@ -58,40 +59,50 @@ class ViewContact extends ViewRecord
 
         return $schema
             ->components([
-                SchemaComponents\Section::make('Информация о контакте')
+                SchemaComponents\Section::make()
                     ->schema([
-                        Components\TextEntry::make('full_name')
-                            ->label('ФИО'),
-                        PhoneDisplay::textEntry(
-                            Components\TextEntry::make('phone')
-                                ->label('Телефон')
-                                ->copyable(),
-                        ),
-                        Components\TextEntry::make('email')
-                            ->label('Email')
-                            ->copyable(),
-                        Components\TextEntry::make('district')
-                            ->label('Район'),
-                        Components\TextEntry::make('source')
-                            ->label('Источник')
-                            ->formatStateUsing(fn ($state) => $state->getLabel()),
-                        Components\TextEntry::make('status')
-                            ->label('Статус')
-                            ->badge()
-                            ->formatStateUsing(fn ($state) => $state->getLabel())
-                            ->color(fn ($state) => $state->getColor()),
-                        Components\TextEntry::make('frozen_until')
-                            ->label('Разморозить')
-                            ->formatStateUsing(fn ($state) => ContactFreezeFields::formatFrozenUntilDisplay($state))
-                            ->visible(fn () => $status === ContactStatus::FROZEN),
-                        Components\TextEntry::make('assignedLeader.name')
-                            ->label('Ответственный лидер'),
-                        Components\TextEntry::make('creator.name')
-                            ->label('Создал'),
-                        Components\TextEntry::make('created_at')
-                            ->label('Дата создания')
-                            ->formatStateUsing(fn ($state) => format_datetime_moscow($state)),
-                    ])->columns(2)->columnSpanFull(),
+                        SchemaComponents\Section::make('Информация о контакте')
+                            ->schema([
+                                Components\TextEntry::make('full_name')
+                                    ->label('ФИО'),
+                                PhoneDisplay::textEntry(
+                                    Components\TextEntry::make('phone')
+                                        ->label('Телефон')
+                                        ->copyable(),
+                                ),
+                                Components\TextEntry::make('email')
+                                    ->label('Email')
+                                    ->copyable(),
+                                Components\TextEntry::make('district')
+                                    ->label('Район'),
+                                Components\TextEntry::make('source')
+                                    ->label('Источник')
+                                    ->formatStateUsing(fn ($state) => $state->getLabel()),
+                                Components\TextEntry::make('status')
+                                    ->label('Статус')
+                                    ->badge()
+                                    ->formatStateUsing(fn ($state) => $state->getLabel())
+                                    ->color(fn ($state) => $state->getColor()),
+                                Components\TextEntry::make('frozen_until')
+                                    ->label('Разморозить')
+                                    ->formatStateUsing(fn ($state) => ContactFreezeFields::formatFrozenUntilDisplay($state))
+                                    ->visible(fn () => $status === ContactStatus::FROZEN),
+                                Components\TextEntry::make('assignedLeader.name')
+                                    ->label('Ответственный лидер'),
+                                Components\TextEntry::make('creator.name')
+                                    ->label('Создал'),
+                                Components\TextEntry::make('created_at')
+                                    ->label('Дата создания')
+                                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state)),
+                            ])
+                            ->columns(2)
+                            ->columnSpan(['default' => 'full', 'lg' => 1]),
+
+                        ContactPhotoFields::infolistSection()
+                            ->columnSpan(['default' => 'full', 'lg' => 1]),
+                    ])
+                    ->columns(['default' => 1, 'lg' => 2])
+                    ->columnSpanFull(),
 
                 ContactCommentsSection::infolistSection(CommentsContext::LeaderView),
 
