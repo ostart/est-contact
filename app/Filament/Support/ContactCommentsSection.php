@@ -50,7 +50,8 @@ class ContactCommentsSection
                 static::initialCommentField()
                     ->visibleOn('create'),
             ])
-            ->collapsible();
+            ->collapsible()
+            ->columnSpanFull();
     }
 
     public static function infolistSection(CommentsContext $context): SchemaComponents\Section

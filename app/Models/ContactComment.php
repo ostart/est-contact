@@ -11,8 +11,6 @@ class ContactComment extends Model
 {
     use LogsActivity;
 
-    public const TABLE_DISPLAY_LIMIT = 20;
-
     protected $fillable = [
         'contact_id',
         'user_id',
