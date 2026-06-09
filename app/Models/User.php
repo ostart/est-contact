@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Filament\Support\UserAvatarFields;
 use App\Filament\Resources\ContactResource;
 use App\Filament\Resources\ManagementResource;
 use App\Filament\Resources\UserResource;
@@ -11,7 +12,6 @@ use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasAvatar;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -212,11 +212,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
 
     public function getFilamentAvatarUrl(): ?string
     {
-        if ($this->avatar) {
-            return Storage::disk('public')->url($this->avatar);
-        }
-
-        return null;
+        return UserAvatarFields::imageUrl($this);
     }
 }
 

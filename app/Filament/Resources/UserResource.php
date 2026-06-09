@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Support\PhoneDisplay;
 use App\Filament\Support\UserActionsSection;
+use App\Filament\Support\UserAvatarFields;
 use App\Models\User;
 use App\Support\PhoneNumberHelper;
 use BackedEnum;
@@ -19,7 +20,6 @@ use Filament\Tables\Table;
 use Closure;
 use Filament\Forms\Components\Field;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
@@ -201,21 +201,14 @@ class UserResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Columns\ImageColumn::make('avatar')
-                    ->label('')
-                    ->circular()
-                    ->size(32)
-                    ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&background=random')
-                    ->getStateUsing(fn ($record) => $record->avatar ? Storage::disk('public')->url($record->avatar) : null)
+                UserAvatarFields::tableColumn()
                     ->action(
                         Actions\Action::make('viewContact')
                             ->modalHeading(fn (User $record) => "Контакт: {$record->name}")
                             ->modalSubmitAction(false)
                             ->modalCancelActionLabel('Закрыть')
                             ->modalContent(function (User $record) {
-                                $avatarUrl = $record->avatar 
-                                    ? Storage::disk('public')->url($record->avatar) 
-                                    : 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&size=120&background=random';
+                                $avatarUrl = UserAvatarFields::imageUrl($record, 120);
                                 
                                 $html = '<div style="text-align: center; margin-bottom: 16px;">';
                                 $html .= '<img src="' . e($avatarUrl) . '" alt="Avatar" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #e5e7eb; margin: 0 auto;">';

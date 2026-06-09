@@ -24,20 +24,22 @@ class ContactPhotoFields
     {
         $name = trim($contact->full_name ?? '') ?: '?';
 
-        return 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&size=' . $size . '&background=random';
+        return InitialsAvatar::dataUri($name, $size);
     }
 
     public static function photoUrl(?Contact $contact): ?string
     {
-        if (! filled($contact?->photo)) {
+        $path = trim((string) ($contact?->photo ?? ''));
+
+        if ($path === '') {
             return null;
         }
 
-        if (! Storage::disk('public')->exists($contact->photo)) {
+        if (! Storage::disk('public')->exists($path)) {
             return null;
         }
 
-        return Storage::disk('public')->url($contact->photo);
+        return Storage::disk('public')->url($path);
     }
 
     public static function tableImageUrl(Contact $contact): string
@@ -176,7 +178,11 @@ class ContactPhotoFields
             ->toggleable(false)
             ->circular()
             ->size(32)
-            ->getStateUsing(fn (Contact $record): string => static::tableImageUrl($record));
+            ->checkFileExistence(false)
+            ->defaultImageUrl(fn (Contact $record): string => static::defaultImageUrl($record))
+            ->getStateUsing(fn ($record): string => $record instanceof Contact
+                ? static::tableImageUrl($record)
+                : InitialsAvatar::dataUri('?'));
     }
 
     public static function assignPhotoToContact(Contact $contact, string $path): void

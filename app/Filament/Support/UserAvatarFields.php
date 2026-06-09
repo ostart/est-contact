@@ -10,6 +10,7 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Component;
+use Filament\Tables\Columns\ImageColumn;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -17,6 +18,47 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class UserAvatarFields
 {
+    public static function defaultImageUrl(User $user, int $size = 32): string
+    {
+        $name = trim($user->name ?? '') ?: '?';
+
+        return InitialsAvatar::dataUri($name, $size);
+    }
+
+    public static function avatarUrl(?User $user): ?string
+    {
+        $path = trim((string) ($user?->avatar ?? ''));
+
+        if ($path === '') {
+            return null;
+        }
+
+        if (! Storage::disk('public')->exists($path)) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($path);
+    }
+
+    public static function imageUrl(User $user, int $size = 32): string
+    {
+        return static::avatarUrl($user) ?? static::defaultImageUrl($user, $size);
+    }
+
+    public static function tableColumn(): ImageColumn
+    {
+        return ImageColumn::make('avatar')
+            ->label("\u{200B}")
+            ->toggleable(false)
+            ->circular()
+            ->size(32)
+            ->checkFileExistence(false)
+            ->defaultImageUrl(fn (User $record): string => static::defaultImageUrl($record))
+            ->getStateUsing(fn ($record): string => $record instanceof User
+                ? static::imageUrl($record)
+                : InitialsAvatar::dataUri('?'));
+    }
+
     public static function avatarHtml(string $url, string $alt): HtmlString
     {
         return new HtmlString(
