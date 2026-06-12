@@ -8,56 +8,17 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     touch-action: pan-x;
-    height: 1.75rem;
     background: transparent;
     border: none;
     box-shadow: none;
     outline: none;
     transform: translateZ(0);
-    scrollbar-width: auto;
-    scrollbar-color: rgb(107 114 128) rgb(229 231 235);
 }
 
 .fi-ta-viewport-scrollbar:focus,
 .fi-ta-viewport-scrollbar:focus-visible {
     outline: none;
     box-shadow: none;
-}
-
-.fi-ta-viewport-scrollbar::-webkit-scrollbar {
-    height: 1.75rem;
-}
-
-.fi-ta-viewport-scrollbar::-webkit-scrollbar-track {
-    background-color: rgb(229 231 235);
-    border-radius: 9999px;
-}
-
-.fi-ta-viewport-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgb(107 114 128);
-    border-radius: 9999px;
-    border: 3px solid rgb(229 231 235);
-}
-
-.fi-ta-viewport-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(75 85 99);
-}
-
-.dark .fi-ta-viewport-scrollbar {
-    scrollbar-color: rgb(156 163 175) rgb(55 65 81);
-}
-
-.dark .fi-ta-viewport-scrollbar::-webkit-scrollbar-track {
-    background-color: rgb(55 65 81);
-}
-
-.dark .fi-ta-viewport-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgb(156 163 175);
-    border-color: rgb(55 65 81);
-}
-
-.dark .fi-ta-viewport-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(209 213 219);
 }
 
 .fi-ta-viewport-scrollbar--hidden {
@@ -80,7 +41,7 @@
     scrollbar-width: none;
 }
 
-.fi-ta .fi-ta-content-ctn::-webkit-scrollbar {
+.fi-ta .fi-ta-content-ctn::-webkit-scrollbar:horizontal {
     height: 0;
     display: none;
 }
@@ -102,8 +63,8 @@
     scrollbar-width: none;
 }
 
-.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-pending::-webkit-scrollbar,
-.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-active::-webkit-scrollbar {
+.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-pending::-webkit-scrollbar:horizontal,
+.fi-ta-content-ctn.fi-ta-content-ctn--viewport-scrollbar-active::-webkit-scrollbar:horizontal {
     height: 0;
     display: none;
 }

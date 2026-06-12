@@ -13,6 +13,7 @@ use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
+use Filament\Support\Facades\FilamentAsset;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -26,6 +27,11 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        FilamentAsset::appVersion((string) max(
+            filemtime(resource_path('css/filament-table-viewport-scrollbar.css')),
+            filemtime(resource_path('js/filament-table-viewport-scrollbar.js')),
+        ));
+
         return $panel
             ->default()
             ->id('admin')
