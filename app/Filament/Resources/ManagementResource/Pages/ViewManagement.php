@@ -74,12 +74,12 @@ class ViewManagement extends ViewRecord
                                 Components\TextEntry::make('new_status')
                                     ->label('Новый статус'),
                                 Components\TextEntry::make('user.name')
-                                    ->label("Пользо-\nватель"),
+                                    ->label('Пользователь'),
                                 Components\TextEntry::make('created_at')
                                     ->label('Дата')
                                     ->formatStateUsing(fn ($state) => format_datetime_moscow($state)),
                             ])
-                            ->columns(5),
+                            ->columns(['default' => 1, 'lg' => 5]),
                     ])->collapsible(),
 
                 ContactCommentsSection::infolistSection(CommentsContext::ManagerView),
