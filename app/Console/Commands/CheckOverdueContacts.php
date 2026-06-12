@@ -37,18 +37,12 @@ class CheckOverdueContacts extends Command
             $unfrozen++;
         }
 
-        $timeout = (int) SystemSetting::get('contact_processing_timeout_days', 30);
-        $cutoffDate = now()->subDays($timeout);
         $queueStatuses = ContactStatus::processingQueueValues();
 
         $overdueContacts = Contact::query()
             ->whereIn('status', $queueStatuses)
-            ->whereRaw(
-                '(SELECT MIN(csh.created_at) FROM contact_status_histories AS csh
-                  WHERE csh.contact_id = contacts.id AND csh.new_status IN (?, ?)) <= ?',
-                [...$queueStatuses, $cutoffDate],
-            )
-            ->get();
+            ->get()
+            ->filter(fn (Contact $contact): bool => $contact->isOverdue());
 
         $overdue = 0;
         foreach ($overdueContacts as $contact) {

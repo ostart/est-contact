@@ -14,6 +14,9 @@ class ContactTableSearchTest extends TestCase
 
         ContactTableSearch::applyLike($query, 'email', 'test@example.com');
 
-        $this->assertStringContainsString('`contacts`.`email` like ?', $query->toSql());
+        $sql = $query->toSql();
+
+        $this->assertStringContainsString('like ?', $sql);
+        $this->assertMatchesRegularExpression('/contacts(?:["`.]|\\.)+email(?:["`.])?\s+like \?/i', $sql);
     }
 }

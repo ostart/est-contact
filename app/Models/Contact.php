@@ -104,11 +104,24 @@ class Contact extends Model
 
     public function processingStartedAt(): ?\Illuminate\Support\Carbon
     {
-        return $this->statusHistories()
-            ->whereIn('new_status', ContactStatus::processingQueueValues())
+        $resetFromStatuses = ContactStatus::processingTimerResetFromValues();
+
+        $anchorAt = $this->statusHistories()
+            ->where(function (Builder $query) use ($resetFromStatuses): void {
+                $query->where('new_status', ContactStatus::IN_PROGRESS->value)
+                    ->orWhere(function (Builder $query) use ($resetFromStatuses): void {
+                        $query->where('new_status', ContactStatus::ASSIGNED->value)
+                            ->where(function (Builder $query) use ($resetFromStatuses): void {
+                                $query->whereNull('old_status')
+                                    ->orWhereIn('old_status', $resetFromStatuses);
+                            });
+                    });
+            })
             ->reorder()
-            ->orderBy('created_at')
+            ->orderByDesc('created_at')
             ->value('created_at');
+
+        return $anchorAt !== null ? \Illuminate\Support\Carbon::parse($anchorAt) : null;
     }
 
     public function statusBeforeFrozen(): ContactStatus
@@ -142,7 +155,7 @@ class Contact extends Model
 
         $timeout = (int) SystemSetting::get('contact_processing_timeout_days', 30);
 
-        return now()->diffInDays($startedAt) > $timeout;
+        return $startedAt->lte(now()->subDays($timeout));
     }
 
     /**

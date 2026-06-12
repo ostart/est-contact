@@ -144,6 +144,14 @@ class ContactStatusTest extends TestCase
         );
     }
 
+    public function test_processing_timer_reset_from_values(): void
+    {
+        $this->assertSame(
+            ['not_processed', 'overdue', 'frozen', 'success', 'failed'],
+            ContactStatus::processingTimerResetFromValues(),
+        );
+    }
+
     public function test_default_table_sort_group_order(): void
     {
         $this->assertSame(1, ContactStatus::defaultTableSortGroup(ContactStatus::NOT_PROCESSED));

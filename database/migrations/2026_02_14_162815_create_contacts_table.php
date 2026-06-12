@@ -17,13 +17,19 @@ return new class extends Migration
             $table->string('phone');
             $table->string('email')->nullable();
             $table->string('district')->nullable();
-            $table->enum('status', [
-                'not_processed',
-                'assigned',
-                'overdue',
-                'success',
-                'failed'
-            ])->default('not_processed');
+
+            if (Schema::getConnection()->getDriverName() === 'sqlite') {
+                $table->string('status')->default('not_processed');
+            } else {
+                $table->enum('status', [
+                    'not_processed',
+                    'assigned',
+                    'overdue',
+                    'success',
+                    'failed',
+                ])->default('not_processed');
+            }
+
             $table->foreignId('assigned_leader_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->timestamps();

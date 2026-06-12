@@ -2,7 +2,9 @@
 
 namespace Tests;
 
+use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -10,12 +12,59 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
-        if (config('database.default') !== 'sqlite') {
-            $this->fail('Tests must run against sqlite only. Check phpunit.xml DB_* settings.');
+        self::assertSafeTestingDatabase();
+    }
+
+    public function createApplication()
+    {
+        self::enforceTestingEnvironmentVariables();
+
+        $app = require Application::inferBasePath().'/bootstrap/app.php';
+
+        $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+        self::assertSafeTestingDatabase();
+
+        return $app;
+    }
+
+    protected function beforeRefreshingDatabase()
+    {
+        self::assertSafeTestingDatabase();
+    }
+
+    /**
+     * @param  array<string, string>  $overrides
+     */
+    public static function enforceTestingEnvironmentVariables(array $overrides = []): void
+    {
+        foreach ([
+            'APP_ENV' => 'testing',
+            'DB_CONNECTION' => 'sqlite',
+            'DB_DATABASE' => ':memory:',
+            ...$overrides,
+        ] as $key => $value) {
+            putenv("{$key}={$value}");
+            $_ENV[$key] = $value;
+            $_SERVER[$key] = $value;
+        }
+    }
+
+    public static function assertSafeTestingDatabase(): void
+    {
+        if (! function_exists('app') || ! app()->bound('config')) {
+            return;
         }
 
-        if (config('database.connections.sqlite.database') !== ':memory:') {
-            $this->fail('Tests must use sqlite :memory: database. Never run tests against a real database file or server.');
+        $default = (string) config('database.default');
+        $database = (string) config("database.connections.{$default}.database");
+
+        if ($default !== 'sqlite' || $database !== ':memory:') {
+            throw new RuntimeException(
+                "Tests refused to run: unsafe database [{$default}:{$database}]. "
+                . 'Tests may only use sqlite :memory:. '
+                . 'Run from project root via: composer test'
+            );
         }
     }
 }

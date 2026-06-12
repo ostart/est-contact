@@ -89,6 +89,22 @@ enum ContactStatus: string
     }
 
     /**
+     * Предыдущие статусы, при переходе из которых в «Назначено» начинается новый отсчёт просрочки.
+     *
+     * @return list<string>
+     */
+    public static function processingTimerResetFromValues(): array
+    {
+        return [
+            self::NOT_PROCESSED->value,
+            self::OVERDUE->value,
+            self::FROZEN->value,
+            self::SUCCESS->value,
+            self::FAILED->value,
+        ];
+    }
+
+    /**
      * @return list<self>
      */
     public function allowedTransitions(bool $forManager = false): array

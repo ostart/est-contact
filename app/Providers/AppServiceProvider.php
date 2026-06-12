@@ -6,7 +6,10 @@ use App\Http\Responses\LoginResponse;
 use App\Models\SystemSetting;
 use Filament\Auth\Http\Responses\Contracts\LoginResponse as LoginResponseContract;
 use Filament\Support\Facades\FilamentTimezone;
+use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Tests\TestCase;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
     {
         \App\Models\Contact::observe(\App\Observers\ContactObserver::class);
 
+        $this->blockDestructiveDatabaseCommandsDuringTests();
         $this->applyMailConfigFromSettings();
 
         // Сессия MySQL в UTC — все TIMESTAMP пишутся и читаются в UTC
@@ -38,6 +42,21 @@ class AppServiceProvider extends ServiceProvider
 
         // Отображение дат в Filament по умолчанию — Москва (хранение остаётся UTC)
         FilamentTimezone::set('Europe/Moscow');
+    }
+
+    private function blockDestructiveDatabaseCommandsDuringTests(): void
+    {
+        if (! $this->app->runningUnitTests()) {
+            return;
+        }
+
+        Event::listen(CommandStarting::class, function (CommandStarting $event): void {
+            if (! in_array($event->command, ['migrate:fresh', 'db:wipe'], true)) {
+                return;
+            }
+
+            TestCase::assertSafeTestingDatabase();
+        });
     }
 
     /**
