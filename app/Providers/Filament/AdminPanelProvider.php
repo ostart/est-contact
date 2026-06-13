@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use Filament\Enums\ThemeMode;
+use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -46,7 +47,12 @@ class AdminPanelProvider extends PanelProvider
                 'azure' => Color::hex('#C5EBFA'),
                 'purple' => Color::Purple,
             ])
-            ->font('Inter')
+            ->font(
+                'Inter Variable',
+                url: asset('fonts/inter/index.css'),
+                provider: LocalFontProvider::class,
+                preload: [asset('fonts/inter/inter-latin-wght-normal-NRMW37G5.woff2')],
+            )
             ->brandName('БВ Контакт')
             ->homeUrl(fn (): ?string => auth()->check() ? auth()->user()->getFilamentHomeUrl() : null)
             ->renderHook(

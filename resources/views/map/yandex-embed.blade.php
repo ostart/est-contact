@@ -4,9 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Карта</title>
+    <x-inter-font />
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { height: 100%; font-family: Inter, system-ui, sans-serif; background: #f9fafb; }
+        html, body { height: 100%; font-family: 'Inter Variable', system-ui, sans-serif; background: #f9fafb; }
         iframe { display: block; width: 100%; height: 100%; border: 0; }
         .error {
             display: flex;
