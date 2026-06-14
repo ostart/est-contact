@@ -68,7 +68,7 @@ class UsersStatsWidget extends BaseWidget
             Stat::make('Новых за неделю', number_format($newThisWeek, 0, ',', ' '))
                 ->description('За 7 дней')
                 ->descriptionIcon('heroicon-m-sparkles')
-                ->color('info')
+                ->color('brown')
                 ->icon('heroicon-o-user-plus'),
         ];
     }

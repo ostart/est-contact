@@ -100,7 +100,7 @@ class ContactsStatsWidget extends BaseWidget
             Stat::make('Новых за неделю', number_format($newThisWeek, 0, ',', ' '))
                 ->description('За 7 дней')
                 ->descriptionIcon('heroicon-m-sparkles')
-                ->color('warning')
+                ->color('brown')
                 ->icon('heroicon-o-star'),
         ];
     }

@@ -46,6 +46,7 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Blue,
                 'azure' => Color::hex('#C5EBFA'),
                 'purple' => Color::Purple,
+                'brown' => Color::hex('#92400e'),
             ])
             ->font(
                 'Inter Variable',
@@ -133,6 +134,7 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 \App\Filament\Widgets\ContactsStatsWidget::class,
                 \App\Filament\Widgets\UsersStatsWidget::class,
+                \App\Filament\Widgets\DashboardMetricsChartWidget::class,
                 \App\Filament\Widgets\UsersTableWidget::class,
             ])
             ->middleware([

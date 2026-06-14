@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Enums\ContactStatus;
 use App\Models\Contact;
-use App\Models\SystemSetting;
+use App\Support\Dashboard\DashboardMetricsSnapshotService;
 use Illuminate\Console\Command;
 
 class CheckOverdueContacts extends Command
@@ -23,7 +23,7 @@ class CheckOverdueContacts extends Command
      */
     protected $description = 'Unfreeze expired contacts and mark overdue ones';
 
-    public function handle(): int
+    public function handle(DashboardMetricsSnapshotService $snapshotService): int
     {
         $unfrozen = 0;
         $frozenContacts = Contact::query()
@@ -51,6 +51,9 @@ class CheckOverdueContacts extends Command
         }
 
         $this->info("Unfroze {$unfrozen} contact(s), marked {$overdue} as overdue.");
+
+        $snapshotService->captureForDate(now('UTC'));
+        $this->info('Dashboard metric snapshot saved.');
 
         return self::SUCCESS;
     }
