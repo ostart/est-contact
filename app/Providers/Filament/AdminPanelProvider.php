@@ -123,6 +123,44 @@ class AdminPanelProvider extends PanelProvider
                         .fi-contact-table-sort-modal .fi-modal-footer-actions > :last-child {
                             margin-inline-start: auto;
                         }
+
+                        .fi-sc-section.fi-contact-status-section .fi-section-content {
+                            padding-block: calc(var(--spacing) * 3);
+                            padding-inline: calc(var(--spacing) * 6);
+                        }
+
+                        .fi-sc-section.fi-contact-status-section .fi-section-content .fi-sc-flex.fi-contact-status-row {
+                            flex-direction: row !important;
+                            flex-wrap: wrap;
+                            align-items: center !important;
+                            justify-content: flex-start !important;
+                            gap: 1rem !important;
+                        }
+
+                        .fi-sc-section.fi-contact-status-section .fi-contact-status-row > div {
+                            flex: 0 0 auto !important;
+                            width: auto !important;
+                        }
+
+                        .fi-sc-section.fi-contact-status-section .fi-contact-status-row .fi-sc-actions {
+                            gap: 0 !important;
+                            height: auto !important;
+                        }
+
+                        .fi-contact-status-label {
+                            font-size: var(--text-base);
+                            line-height: var(--tw-leading, var(--text-base--line-height));
+                            font-weight: var(--font-weight-semibold);
+                            color: var(--gray-950);
+                        }
+
+                        .fi-contact-status-label:where(.dark, .dark *) {
+                            color: var(--color-white);
+                        }
+
+                        .fi-sc-section.fi-contact-status-history-section {
+                            padding-bottom: calc(var(--spacing) * 12);
+                        }
                     </style>
                     HTML),
             )

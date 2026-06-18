@@ -15,6 +15,8 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components as SchemaComponents;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Size;
+use Illuminate\Support\HtmlString;
 
 class ViewContact extends ViewRecord
 {
@@ -106,98 +108,107 @@ class ViewContact extends ViewRecord
 
                 ContactCommentsSection::infolistSection(CommentsContext::LeaderView),
 
-                // Десктоп: слева История статусов, справа Изменить статус. Мобильная: в один столбец.
                 SchemaComponents\Section::make()
                     ->schema([
-                        SchemaComponents\Section::make('История статусов')
-                            ->schema([
-                                Components\RepeatableEntry::make('statusHistories')
-                                    ->label('')
-                                    ->schema([
-                                        Components\TextEntry::make('contact.full_name')
-                                            ->label('Контакт'),
-                                        Components\TextEntry::make('old_status')
-                                            ->label('Старый статус')
-                                            ->default('—'),
-                                        Components\TextEntry::make('new_status')
-                                            ->label('Новый статус'),
-                                        Components\TextEntry::make('user.name')
-                                            ->label('Пользователь'),
-                                        Components\TextEntry::make('created_at')
-                                            ->label('Дата')
-                                            ->formatStateUsing(fn ($state) => format_datetime_moscow($state)),
+                        SchemaComponents\Flex::make([
+                            SchemaComponents\Html::make(new HtmlString('<span class="fi-contact-status-label">Статус</span>')),
+                            SchemaComponents\Text::make(fn (): string => $status->getLabel())
+                                ->badge()
+                                ->color($status->getColor()),
+                            SchemaComponents\Actions::make([
+                                \Filament\Actions\Action::make('change_status')
+                                    ->label('Изменить статус')
+                                    ->size(Size::Small)
+                                    ->form([
+                                        Forms\Components\Select::make('status')
+                                            ->label('Новый статус')
+                                            ->options($availableStatuses)
+                                            ->default(fn () => match (true) {
+                                                $status === ContactStatus::FROZEN && $isLeader => ContactStatus::IN_PROGRESS->value,
+                                                $status === ContactStatus::FROZEN => $this->record->statusBeforeFrozen()->value,
+                                                default => $this->record->status instanceof ContactStatus
+                                                    ? $this->record->status->value
+                                                    : $this->record->status,
+                                            })
+                                            ->required()
+                                            ->live(),
+                                        ...ContactFreezeFields::schema(),
                                     ])
-                                    ->columns(['default' => 1, 'lg' => 5]),
-                            ])
-                            ->collapsible()
-                            ->columnSpan(['default' => 'full', 'lg' => 1]),
-                        SchemaComponents\Section::make('Изменить статус')
-                            ->schema([
-                                SchemaComponents\Actions::make([
-                                    \Filament\Actions\Action::make('change_status')
-                                        ->label('Изменить статус')
-                                        ->form([
-                                            Forms\Components\Select::make('status')
-                                                ->label('Новый статус')
-                                                ->options($availableStatuses)
-                                                ->default(fn () => match (true) {
-                                                    $status === ContactStatus::FROZEN && $isLeader => ContactStatus::IN_PROGRESS->value,
-                                                    $status === ContactStatus::FROZEN => $this->record->statusBeforeFrozen()->value,
-                                                    default => $this->record->status instanceof ContactStatus
-                                                        ? $this->record->status->value
-                                                        : $this->record->status,
-                                                })
-                                                ->required()
-                                                ->live(),
-                                            ...ContactFreezeFields::schema(),
-                                        ])
-                                        ->action(function (array $data) use ($isNotProcessed, $status) {
-                                            if (
-                                                $data['status'] === ContactStatus::FROZEN->value
-                                                && $status !== ContactStatus::FROZEN
-                                            ) {
-                                                ContactFreezeFields::applyFreeze($this->record, $data);
+                                    ->action(function (array $data) use ($isNotProcessed, $status) {
+                                        if (
+                                            $data['status'] === ContactStatus::FROZEN->value
+                                            && $status !== ContactStatus::FROZEN
+                                        ) {
+                                            ContactFreezeFields::applyFreeze($this->record, $data);
 
-                                                Notification::make()
-                                                    ->title('Статус обновлен')
-                                                    ->success()
-                                                    ->send();
-
-                                                $this->redirect(static::getResource()::getUrl('view', ['record' => $this->record]));
-
-                                                return;
-                                            }
-
-                                            $updateData = ['status' => $data['status']];
-                                            
-                                            if ($data['status'] === ContactStatus::NOT_PROCESSED->value) {
-                                                $updateData['assigned_leader_id'] = null;
-                                            } elseif (
-                                                ($isNotProcessed || $status === ContactStatus::ASSIGNED)
-                                                && $data['status'] === ContactStatus::IN_PROGRESS->value
-                                            ) {
-                                                $updateData['assigned_leader_id'] = auth()->id();
-                                            }
-                                            
-                                            $this->record->update($updateData);
-                                            
                                             Notification::make()
                                                 ->title('Статус обновлен')
                                                 ->success()
                                                 ->send();
-                                            
+
                                             $this->redirect(static::getResource()::getUrl('view', ['record' => $this->record]));
-                                        })
-                                        ->modalSubmitActionLabel('Сохранить')
-                                        ->modalCancelActionLabel('Отмена')
-                                        ->visible($canEditStatus),
-                                ]),
-                            ])
-                            ->visible($canEditStatus)
-                            ->collapsible()
-                            ->columnSpan(['default' => 'full', 'lg' => 1]),
+
+                                            return;
+                                        }
+
+                                        $updateData = ['status' => $data['status']];
+
+                                        if ($data['status'] === ContactStatus::NOT_PROCESSED->value) {
+                                            $updateData['assigned_leader_id'] = null;
+                                        } elseif (
+                                            ($isNotProcessed || $status === ContactStatus::ASSIGNED)
+                                            && $data['status'] === ContactStatus::IN_PROGRESS->value
+                                        ) {
+                                            $updateData['assigned_leader_id'] = auth()->id();
+                                        }
+
+                                        $this->record->update($updateData);
+
+                                        Notification::make()
+                                            ->title('Статус обновлен')
+                                            ->success()
+                                            ->send();
+
+                                        $this->redirect(static::getResource()::getUrl('view', ['record' => $this->record]));
+                                    })
+                                    ->modalSubmitActionLabel('Сохранить')
+                                    ->modalCancelActionLabel('Отмена'),
+                            ]),
+                        ])
+                        ->extraAttributes([
+                            'class' => 'fi-contact-status-row',
+                            'style' => 'gap: 1rem; flex-direction: row; justify-content: flex-start; align-items: center;',
+                        ])
+                        ->alignStart()
+                        ->verticallyAlignCenter(),
                     ])
-                    ->columns(['default' => 1, 'lg' => 2])
+                    ->extraAttributes(['class' => 'fi-contact-status-section'])
+                    ->visible($canEditStatus)
+                    ->columnSpanFull(),
+
+                SchemaComponents\Section::make('История статусов')
+                    ->schema([
+                        Components\RepeatableEntry::make('statusHistories')
+                            ->label('')
+                            ->schema([
+                                Components\TextEntry::make('contact.full_name')
+                                    ->label('Контакт'),
+                                Components\TextEntry::make('old_status')
+                                    ->label('Старый статус')
+                                    ->default('—'),
+                                Components\TextEntry::make('new_status')
+                                    ->label('Новый статус'),
+                                Components\TextEntry::make('user.name')
+                                    ->label('Пользователь'),
+                                Components\TextEntry::make('created_at')
+                                    ->label('Дата')
+                                    ->formatStateUsing(fn ($state) => format_datetime_moscow($state)),
+                            ])
+                            ->columns(['default' => 1, 'lg' => 5]),
+                    ])
+                    ->collapsible()
+                    ->collapsed()
+                    ->extraAttributes(['class' => 'fi-contact-status-history-section'])
                     ->columnSpanFull(),
             ]);
     }
