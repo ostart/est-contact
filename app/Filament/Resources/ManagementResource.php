@@ -229,12 +229,7 @@ class ManagementResource extends Resource
                     ->sortable()
                     ->toggleable(),
 
-                Columns\TextColumn::make('status')
-                    ->label('Статус')
-                    ->badge()
-                    ->formatStateUsing(fn ($state): string => ($state instanceof ContactStatus ? $state : ContactStatus::from($state))->getLabel())
-                    ->color(fn ($state): string => ($state instanceof ContactStatus ? $state : ContactStatus::from($state))->getColor())
-                    ->sortable(),
+                ContactTableColumns::status(),
 
                 ContactTableColumns::overdueAt(),
 
@@ -257,18 +252,7 @@ class ManagementResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
-                    ->label('Статус')
-                    ->options([
-                        ContactStatus::NOT_PROCESSED->value => ContactStatus::NOT_PROCESSED->getLabel(),
-                        ContactStatus::ASSIGNED->value => ContactStatus::ASSIGNED->getLabel(),
-                        ContactStatus::IN_PROGRESS->value => ContactStatus::IN_PROGRESS->getLabel(),
-                        ContactStatus::FROZEN->value => ContactStatus::FROZEN->getLabel(),
-                        ContactStatus::OVERDUE->value => ContactStatus::OVERDUE->getLabel(),
-                        ContactStatus::SUCCESS->value => ContactStatus::SUCCESS->getLabel(),
-                        ContactStatus::FAILED->value => ContactStatus::FAILED->getLabel(),
-                    ]),
-
+                ContactTableColumns::statusFilter(),
                 Tables\Filters\SelectFilter::make('source')
                     ->label('Источник')
                     ->options(ContactSource::options())

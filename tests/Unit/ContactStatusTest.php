@@ -172,4 +172,25 @@ class ContactStatusTest extends TestCase
             );
         }
     }
+
+    public function test_status_options_use_russian_labels(): void
+    {
+        $this->assertSame('В работе', ContactStatus::options()[ContactStatus::IN_PROGRESS->value]);
+        $this->assertSame('Просрочен', ContactStatus::options()[ContactStatus::OVERDUE->value]);
+    }
+
+    public function test_values_matching_label_search_finds_partial_russian_matches(): void
+    {
+        $this->assertSame(
+            [ContactStatus::IN_PROGRESS->value],
+            ContactStatus::valuesMatchingLabelSearch('работе'),
+        );
+
+        $this->assertSame(
+            [ContactStatus::OVERDUE->value],
+            ContactStatus::valuesMatchingLabelSearch('просроч'),
+        );
+
+        $this->assertSame([], ContactStatus::valuesMatchingLabelSearch('xyz'));
+    }
 }

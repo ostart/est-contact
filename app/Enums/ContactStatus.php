@@ -176,15 +176,45 @@ enum ContactStatus: string
     /**
      * @return array<string, string>
      */
+    /**
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        $options = [];
+        foreach (self::cases() as $status) {
+            $options[$status->value] = $status->getLabel();
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function valuesMatchingLabelSearch(string $search): array
+    {
+        $search = mb_strtolower(trim($search));
+
+        if ($search === '') {
+            return [];
+        }
+
+        $values = [];
+
+        foreach (self::cases() as $status) {
+            if (str_contains(mb_strtolower($status->getLabel()), $search)) {
+                $values[] = $status->value;
+            }
+        }
+
+        return $values;
+    }
+
     public static function formOptions(?self $current = null, bool $forManager = true): array
     {
         if ($current === null) {
-            $options = [];
-            foreach (self::cases() as $status) {
-                $options[$status->value] = $status->getLabel();
-            }
-
-            return $options;
+            return self::options();
         }
 
         return $current->transitionOptions($forManager);
