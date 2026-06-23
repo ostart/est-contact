@@ -27,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         \App\Models\Contact::observe(\App\Observers\ContactObserver::class);
+        \App\Models\ContactComment::observe(\App\Observers\ContactCommentObserver::class);
 
         $this->blockDestructiveDatabaseCommandsDuringTests();
         $this->applyMailConfigFromSettings();

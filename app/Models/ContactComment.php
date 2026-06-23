@@ -15,6 +15,7 @@ class ContactComment extends Model
         'contact_id',
         'user_id',
         'comment',
+        'created_at',
     ];
 
     protected $casts = [

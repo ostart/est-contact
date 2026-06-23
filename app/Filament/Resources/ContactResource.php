@@ -6,6 +6,7 @@ use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ContactResource\Pages;
 use App\Filament\Support\ContactPhotoFields;
+use App\Filament\Support\ContactTableColumns;
 use App\Filament\Support\ContactTableSearch;
 use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
@@ -184,6 +185,8 @@ class ContactResource extends Resource
                     ->color(fn ($state): string => ($state instanceof ContactStatus ? $state : ContactStatus::from($state))->getColor())
                     ->sortable(),
 
+                ContactTableColumns::overdueAt(),
+
                 Columns\TextColumn::make('assignedLeader.name')
                     ->label('Ответственный')
                     ->searchable()
@@ -200,7 +203,7 @@ class ContactResource extends Resource
                     ->label('Обновлен')
                     ->formatStateUsing(fn ($state) => format_datetime_moscow($state, withSeconds: true))
                     ->sortable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
             ]);
 
         if ($leaderFiltersUiLocked) {

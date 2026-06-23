@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Support\PhoneNumberHelper;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
@@ -56,7 +57,9 @@ class Contact extends Model
     protected $casts = [
         'source' => ContactSource::class,
         'status' => ContactStatus::class,
-        'frozen_until' => 'datetime',
+        'frozen_until' => 'datetime:UTC',
+        'processing_activity_at' => 'datetime:UTC',
+        'overdue_at' => 'datetime:UTC',
     ];
 
     protected function phone(): Attribute
@@ -102,26 +105,72 @@ class Contact extends Model
         return $this->hasMany(ContactStatusHistory::class)->orderByDesc('created_at');
     }
 
-    public function processingStartedAt(): ?\Illuminate\Support\Carbon
+    public static function processingTimeoutDays(): int
     {
-        $resetFromStatuses = ContactStatus::processingTimerResetFromValues();
+        return (int) SystemSetting::get('contact_processing_timeout_days', 30);
+    }
 
-        $anchorAt = $this->statusHistories()
-            ->where(function (Builder $query) use ($resetFromStatuses): void {
-                $query->where('new_status', ContactStatus::IN_PROGRESS->value)
-                    ->orWhere(function (Builder $query) use ($resetFromStatuses): void {
-                        $query->where('new_status', ContactStatus::ASSIGNED->value)
-                            ->where(function (Builder $query) use ($resetFromStatuses): void {
-                                $query->whereNull('old_status')
-                                    ->orWhereIn('old_status', $resetFromStatuses);
-                            });
-                    });
-            })
-            ->reorder()
-            ->orderByDesc('created_at')
-            ->value('created_at');
+    public function touchProcessingActivity(?Carbon $at = null): void
+    {
+        $this->processing_activity_at = ($at ?? now('UTC'));
+        $this->syncOverdueAt();
+    }
 
-        return $anchorAt !== null ? \Illuminate\Support\Carbon::parse($anchorAt) : null;
+    public function syncOverdueAt(): void
+    {
+        if ($this->processing_activity_at === null) {
+            $this->overdue_at = null;
+
+            return;
+        }
+
+        $this->overdue_at = $this->processing_activity_at->copy()->addDays(static::processingTimeoutDays());
+    }
+
+    public function applyProcessingActivityOnSave(): void
+    {
+        if ($this->isDirty('assigned_leader_id')) {
+            if ($this->assigned_leader_id) {
+                $this->touchProcessingActivity();
+            } else {
+                $this->processing_activity_at = null;
+                $this->syncOverdueAt();
+            }
+        }
+
+        if (! $this->isDirty('status')) {
+            return;
+        }
+
+        $oldStatus = $this->resolveOriginalStatus();
+        $newStatus = $this->status instanceof ContactStatus
+            ? $this->status
+            : ContactStatus::from($this->status);
+
+        if ($newStatus === ContactStatus::NOT_PROCESSED || $newStatus->isFinal()) {
+            $this->processing_activity_at = null;
+            $this->syncOverdueAt();
+
+            return;
+        }
+
+        if (
+            in_array($newStatus, [ContactStatus::ASSIGNED, ContactStatus::IN_PROGRESS], true)
+            || $oldStatus === ContactStatus::FROZEN
+        ) {
+            $this->touchProcessingActivity();
+        }
+    }
+
+    protected function resolveOriginalStatus(): ?ContactStatus
+    {
+        $oldStatusValue = $this->getOriginal('status');
+
+        if ($oldStatusValue instanceof ContactStatus) {
+            return $oldStatusValue;
+        }
+
+        return is_string($oldStatusValue) ? ContactStatus::tryFrom($oldStatusValue) : null;
     }
 
     public function statusBeforeFrozen(): ContactStatus
@@ -141,21 +190,144 @@ class Contact extends Model
         return ContactStatus::ASSIGNED;
     }
 
+    public function statusBeforeOverdue(): ContactStatus
+    {
+        $oldStatus = $this->statusHistories()
+            ->where('new_status', ContactStatus::OVERDUE->value)
+            ->reorder()
+            ->orderByDesc('created_at')
+            ->value('old_status');
+
+        $status = is_string($oldStatus) ? ContactStatus::tryFrom($oldStatus) : null;
+
+        if ($status === ContactStatus::IN_PROGRESS) {
+            return ContactStatus::IN_PROGRESS;
+        }
+
+        return ContactStatus::ASSIGNED;
+    }
+
+    public function resolveProcessingActivityAtFromHistory(): ?Carbon
+    {
+        $queueStatuses = ContactStatus::processingQueueValues();
+        $frozenStatus = ContactStatus::FROZEN->value;
+
+        $statusAt = $this->statusHistories()
+            ->where(function (Builder $query) use ($queueStatuses, $frozenStatus): void {
+                $query->whereIn('new_status', $queueStatuses)
+                    ->orWhere('old_status', $frozenStatus);
+            })
+            ->reorder()
+            ->orderByDesc('created_at')
+            ->value('created_at');
+
+        $commentAt = null;
+        if ($this->assigned_leader_id) {
+            $commentAt = $this->comments()
+                ->where('user_id', $this->assigned_leader_id)
+                ->max('created_at');
+        }
+
+        $candidates = array_filter([
+            $statusAt ? Carbon::parse($statusAt) : null,
+            $commentAt ? Carbon::parse($commentAt) : null,
+        ]);
+
+        if ($candidates === []) {
+            return null;
+        }
+
+        return collect($candidates)->max();
+    }
+
+    public function recalculateProcessingActivityFromHistory(): bool
+    {
+        $activityAt = $this->resolveProcessingActivityAtFromHistory();
+
+        if ($activityAt === null) {
+            $this->forceFill([
+                'processing_activity_at' => null,
+                'overdue_at' => null,
+            ])->saveQuietly();
+
+            return false;
+        }
+
+        $this->touchProcessingActivity($activityAt);
+        $this->saveQuietly();
+
+        return true;
+    }
+
+    public function shouldDisplayOverdueAt(): bool
+    {
+        return in_array($this->status, [
+            ContactStatus::ASSIGNED,
+            ContactStatus::IN_PROGRESS,
+            ContactStatus::OVERDUE,
+            ContactStatus::FROZEN,
+        ], true);
+    }
+
+    public function resolveOverdueAt(): ?Carbon
+    {
+        if (! $this->shouldDisplayOverdueAt()) {
+            return null;
+        }
+
+        if ($this->overdue_at !== null) {
+            return $this->overdue_at;
+        }
+
+        $activityAt = $this->resolveProcessingActivityAtFromHistory();
+
+        return $activityAt?->copy()->addDays(static::processingTimeoutDays());
+    }
+
     public function isOverdue(): bool
     {
         if (! in_array($this->status, [ContactStatus::ASSIGNED, ContactStatus::IN_PROGRESS], true)) {
             return false;
         }
 
-        $startedAt = $this->processingStartedAt();
-
-        if ($startedAt === null) {
+        if ($this->overdue_at === null) {
             return false;
         }
 
-        $timeout = (int) SystemSetting::get('contact_processing_timeout_days', 30);
+        return $this->overdue_at->lte(now());
+    }
 
-        return $startedAt->lte(now()->subDays($timeout));
+    /**
+     * Сортировка по колонке «Дата просрочки»: только релевантные статусы, null в конце.
+     */
+    public function scopeOrderByOverdueAt(Builder $query, string $direction = 'asc'): Builder
+    {
+        $table = $query->getModel()->getTable();
+        $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+        $days = static::processingTimeoutDays();
+
+        $displayStatuses = array_map(
+            fn (ContactStatus $status): string => "'{$status->value}'",
+            [
+                ContactStatus::ASSIGNED,
+                ContactStatus::IN_PROGRESS,
+                ContactStatus::OVERDUE,
+                ContactStatus::FROZEN,
+            ],
+        );
+        $statusIn = implode(', ', $displayStatuses);
+
+        $driver = $query->getConnection()->getDriverName();
+
+        $deadlineExpression = match ($driver) {
+            'sqlite' => "CASE WHEN {$table}.status IN ({$statusIn}) THEN COALESCE({$table}.overdue_at, datetime({$table}.processing_activity_at, '+{$days} days')) END",
+            'pgsql' => "CASE WHEN {$table}.status IN ({$statusIn}) THEN COALESCE({$table}.overdue_at, {$table}.processing_activity_at + interval '{$days} days') END",
+            default => "CASE WHEN {$table}.status IN ({$statusIn}) THEN COALESCE({$table}.overdue_at, DATE_ADD({$table}.processing_activity_at, INTERVAL {$days} DAY)) END",
+        };
+
+        return $query
+            ->orderByRaw("({$deadlineExpression}) IS NULL ASC")
+            ->orderByRaw("({$deadlineExpression}) ".strtoupper($direction));
     }
 
     /**

@@ -39,7 +39,7 @@ trait HasPersistedContactTablePreferences
 
     public function getTableColumnsSessionKey(): string
     {
-        return parent::getTableColumnsSessionKey() . '_v4';
+        return parent::getTableColumnsSessionKey() . '_v6';
     }
 
     public function getTableSortSessionKey(): string
@@ -141,13 +141,62 @@ trait HasPersistedContactTablePreferences
      */
     protected function loadTableColumnsFromSession(): array
     {
+        $defaults = $this->getDefaultTableColumnState();
         $columns = $this->getContactTablePreferenceRecord()?->columns;
 
-        if (filled($columns)) {
-            return $columns;
+        if (blank($columns)) {
+            return $defaults;
         }
 
-        return $this->getDefaultTableColumnState();
+        return $this->mergeMissingTableColumns($columns, $defaults);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $saved
+     * @param  array<int, array<string, mixed>>  $defaults
+     * @return array<int, array<string, mixed>>
+     */
+    protected function mergeMissingTableColumns(array $saved, array $defaults): array
+    {
+        $savedNames = $this->collectTableColumnNames($saved);
+
+        foreach ($defaults as $defaultColumn) {
+            $name = $defaultColumn['name'] ?? null;
+
+            if (! is_string($name) || $name === '' || in_array($name, $savedNames, true)) {
+                continue;
+            }
+
+            $saved[] = array_merge($defaultColumn, [
+                'isHidden' => false,
+                'isToggled' => true,
+            ]);
+        }
+
+        return $saved;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $columns
+     * @return list<string>
+     */
+    protected function collectTableColumnNames(array $columns): array
+    {
+        $names = [];
+
+        foreach ($columns as $column) {
+            if (isset($column['name']) && is_string($column['name'])) {
+                $names[] = $column['name'];
+            }
+
+            foreach ($column['columns'] ?? [] as $childColumn) {
+                if (isset($childColumn['name']) && is_string($childColumn['name'])) {
+                    $names[] = $childColumn['name'];
+                }
+            }
+        }
+
+        return $names;
     }
 
     protected function persistTableColumns(): void

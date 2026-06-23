@@ -34,33 +34,29 @@ class ContactObserver
 
     public function saving(Contact $contact): void
     {
-        if (! $contact->isDirty('status')) {
-            return;
+        if ($contact->isDirty('status')) {
+            $newStatus = $contact->status instanceof ContactStatus
+                ? $contact->status
+                : ContactStatus::from($contact->status);
+
+            if ($newStatus !== ContactStatus::FROZEN) {
+                $contact->frozen_until = null;
+            } elseif ($contact->frozen_until === null) {
+                throw ValidationException::withMessages([
+                    'frozen_until' => 'Укажите дату разморозки.',
+                ]);
+            } else {
+                $frozenUntil = Carbon::parse($contact->frozen_until)->utc();
+
+                if ($frozenUntil->lte(now('UTC'))) {
+                    throw ValidationException::withMessages([
+                        'frozen_until' => 'Дата разморозки должна быть в будущем.',
+                    ]);
+                }
+            }
         }
 
-        $newStatus = $contact->status instanceof ContactStatus
-            ? $contact->status
-            : ContactStatus::from($contact->status);
-
-        if ($newStatus !== ContactStatus::FROZEN) {
-            $contact->frozen_until = null;
-
-            return;
-        }
-
-        if ($contact->frozen_until === null) {
-            throw ValidationException::withMessages([
-                'frozen_until' => 'Укажите дату разморозки.',
-            ]);
-        }
-
-        $frozenUntil = Carbon::parse($contact->frozen_until)->utc();
-
-        if ($frozenUntil->lte(now('UTC'))) {
-            throw ValidationException::withMessages([
-                'frozen_until' => 'Дата разморозки должна быть в будущем.',
-            ]);
-        }
+        $contact->applyProcessingActivityOnSave();
     }
 
     /**

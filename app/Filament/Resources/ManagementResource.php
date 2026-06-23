@@ -6,6 +6,7 @@ use App\Enums\CommentsContext;
 use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ManagementResource\Pages;
+use App\Filament\Support\ContactTableColumns;
 use App\Filament\Support\ContactTableSearch;
 use App\Filament\Support\ContactCommentsSection;
 use App\Filament\Support\ContactFreezeFields;
@@ -235,6 +236,8 @@ class ManagementResource extends Resource
                     ->color(fn ($state): string => ($state instanceof ContactStatus ? $state : ContactStatus::from($state))->getColor())
                     ->sortable(),
 
+                ContactTableColumns::overdueAt(),
+
                 Columns\TextColumn::make('assignedLeader.name')
                     ->label('Ответственный')
                     ->searchable()
@@ -251,7 +254,7 @@ class ManagementResource extends Resource
                     ->label('Обновлен')
                     ->formatStateUsing(fn ($state) => format_datetime_moscow($state, withSeconds: true))
                     ->sortable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
