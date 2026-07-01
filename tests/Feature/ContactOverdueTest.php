@@ -10,6 +10,7 @@ use App\Models\ContactStatusHistory;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Carbon\Carbon;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -53,18 +54,226 @@ class ContactOverdueTest extends TestCase
 
     public function test_processing_activity_resets_after_unfreeze(): void
     {
-        $assignedAt = Carbon::parse('2026-01-01 10:00:00', 'UTC');
-        $unfrozenAt = Carbon::parse('2026-06-11 00:00:00', 'UTC');
+        $this->seed(RoleSeeder::class);
 
-        $contact = $this->createContact(ContactStatus::IN_PROGRESS, [
-            ['old_status' => null, 'new_status' => ContactStatus::NOT_PROCESSED->value, 'created_at' => $assignedAt->copy()->subDay()],
-            ['old_status' => ContactStatus::NOT_PROCESSED->value, 'new_status' => ContactStatus::ASSIGNED->value, 'created_at' => $assignedAt],
-            ['old_status' => ContactStatus::ASSIGNED->value, 'new_status' => ContactStatus::IN_PROGRESS->value, 'created_at' => $assignedAt->copy()->addDays(2)],
-            ['old_status' => ContactStatus::IN_PROGRESS->value, 'new_status' => ContactStatus::FROZEN->value, 'created_at' => $assignedAt->copy()->addDays(3)],
-            ['old_status' => ContactStatus::FROZEN->value, 'new_status' => ContactStatus::IN_PROGRESS->value, 'created_at' => $unfrozenAt],
-        ], $unfrozenAt);
+        $inProgressAt = Carbon::parse('2026-06-03 20:19:11', 'UTC');
+        $frozenUntil = Carbon::parse('2026-06-11 00:00:00', 'UTC');
+        $originalOverdueAt = $inProgressAt->copy()->addDays(30);
 
+        $leader = User::factory()->create(['is_approved' => true]);
+        $leader->assignRole('leader');
+        $this->actingAs($leader);
+
+        Carbon::setTestNow(Carbon::parse('2026-06-03 20:19:11', 'UTC'));
+
+        $contact = Contact::create([
+            'full_name' => 'Test Contact',
+            'phone' => '+79990001122',
+            'status' => ContactStatus::NOT_PROCESSED,
+            'assigned_leader_id' => $leader->id,
+            'created_by' => $leader->id,
+        ]);
+        $this->assertSame(ContactStatus::NOT_PROCESSED, $contact->status);
+
+        $contact->update(['status' => ContactStatus::IN_PROGRESS]);
+        $contact->refresh();
+        $this->assertSame(ContactStatus::IN_PROGRESS, $contact->status);
+
+        $contact->forceFill([
+            'processing_activity_at' => $inProgressAt,
+            'overdue_at' => $originalOverdueAt,
+        ])->saveQuietly();
+
+        Carbon::setTestNow(Carbon::parse('2026-06-03 20:19:50', 'UTC'));
+
+        $contact->update([
+            'status' => ContactStatus::FROZEN,
+            'frozen_until' => $frozenUntil,
+        ]);
+
+        $freezeDurationSeconds = Carbon::parse('2026-06-03 20:19:50', 'UTC')
+            ->diffInSeconds($frozenUntil);
+        $extendedOverdueAt = $originalOverdueAt->copy()->addSeconds($freezeDurationSeconds);
+
+        $this->assertTrue($inProgressAt->equalTo($contact->processing_activity_at));
+        $this->assertTrue($extendedOverdueAt->equalTo($contact->overdue_at));
+
+        Carbon::setTestNow($frozenUntil);
+
+        $this->artisan(CheckOverdueContacts::class)->assertSuccessful();
+
+        $contact->refresh();
+
+        $this->assertSame(ContactStatus::IN_PROGRESS, $contact->status);
+        $this->assertTrue($frozenUntil->equalTo($contact->processing_activity_at));
+        $this->assertTrue($frozenUntil->copy()->addDays(30)->equalTo($contact->overdue_at));
+        $this->assertFalse($contact->isOverdue());
+    }
+
+    public function test_early_manual_unfreeze_resets_timer_from_unfreeze_moment(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $inProgressAt = Carbon::parse('2026-06-03 20:19:11', 'UTC');
+        $frozenUntil = Carbon::parse('2026-06-13 03:00:03', 'UTC');
+        $earlyUnfreezeAt = Carbon::parse('2026-06-08 12:00:00', 'UTC');
+
+        $leader = User::factory()->create(['is_approved' => true]);
+        $leader->assignRole('leader');
+        $this->actingAs($leader);
+
+        Carbon::setTestNow(Carbon::parse('2026-06-03 20:19:11', 'UTC'));
+
+        $contact = Contact::create([
+            'full_name' => 'Test Contact',
+            'phone' => '+79990001122',
+            'status' => ContactStatus::NOT_PROCESSED,
+            'assigned_leader_id' => $leader->id,
+            'created_by' => $leader->id,
+        ]);
+
+        $contact->update(['status' => ContactStatus::IN_PROGRESS]);
+        $contact->forceFill([
+            'processing_activity_at' => $inProgressAt,
+            'overdue_at' => $inProgressAt->copy()->addDays(30),
+        ])->saveQuietly();
+
+        Carbon::setTestNow(Carbon::parse('2026-06-03 20:19:50', 'UTC'));
+
+        $contact->update([
+            'status' => ContactStatus::FROZEN,
+            'frozen_until' => $frozenUntil,
+        ]);
+
+        Carbon::setTestNow($earlyUnfreezeAt);
+
+        $contact->update(['status' => ContactStatus::IN_PROGRESS]);
+
+        $this->assertTrue($earlyUnfreezeAt->equalTo($contact->processing_activity_at));
+        $this->assertTrue($earlyUnfreezeAt->copy()->addDays(30)->equalTo($contact->overdue_at));
+        $this->assertFalse($contact->isOverdue());
+    }
+
+    public function test_freeze_extends_overdue_at_by_planned_duration(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $inProgressAt = Carbon::parse('2026-06-03 20:19:11', 'UTC');
+        $frozenUntil = Carbon::parse('2026-06-13 03:00:03', 'UTC');
+        $originalOverdueAt = $inProgressAt->copy()->addDays(30);
+
+        $leader = User::factory()->create(['is_approved' => true]);
+        $leader->assignRole('leader');
+        $this->actingAs($leader);
+
+        Carbon::setTestNow(Carbon::parse('2026-06-03 20:19:11', 'UTC'));
+
+        $contact = Contact::create([
+            'full_name' => 'Test Contact',
+            'phone' => '+79990001122',
+            'status' => ContactStatus::NOT_PROCESSED,
+            'assigned_leader_id' => $leader->id,
+            'created_by' => $leader->id,
+        ]);
+        $this->assertSame(ContactStatus::NOT_PROCESSED, $contact->status);
+
+        $contact->update(['status' => ContactStatus::IN_PROGRESS]);
+        $contact->refresh();
+        $this->assertSame(ContactStatus::IN_PROGRESS, $contact->status);
+
+        $contact->forceFill([
+            'processing_activity_at' => $inProgressAt,
+            'overdue_at' => $originalOverdueAt,
+        ])->saveQuietly();
+
+        Carbon::setTestNow(Carbon::parse('2026-06-03 20:19:50', 'UTC'));
+
+        $contact->update([
+            'status' => ContactStatus::FROZEN,
+            'frozen_until' => $frozenUntil,
+        ]);
+
+        $freezeDurationSeconds = Carbon::parse('2026-06-03 20:19:50', 'UTC')
+            ->diffInSeconds($frozenUntil);
+
+        $this->assertTrue($inProgressAt->equalTo($contact->processing_activity_at));
+        $this->assertTrue(
+            $originalOverdueAt->copy()->addSeconds($freezeDurationSeconds)->equalTo($contact->overdue_at),
+        );
+    }
+
+    public function test_unfrozen_contact_resets_timer_and_is_not_marked_overdue(): void
+    {
+        $unfrozenAt = Carbon::parse('2026-06-13 03:00:03', 'UTC');
+        Carbon::setTestNow($unfrozenAt);
+
+        $user = User::factory()->create();
+        $inProgressAt = Carbon::parse('2026-06-03 20:19:11', 'UTC');
+        $frozenAt = Carbon::parse('2026-06-03 20:19:50', 'UTC');
+        $frozenUntil = Carbon::parse('2026-06-13 03:00:03', 'UTC');
+
+        $contact = Contact::withoutEvents(function () use (
+            $user,
+            $inProgressAt,
+            $frozenUntil,
+        ): Contact {
+            $contact = Contact::create([
+                'full_name' => 'Test Contact',
+                'phone' => '+79990001122',
+                'status' => ContactStatus::FROZEN,
+                'frozen_until' => $frozenUntil,
+                'assigned_leader_id' => $user->id,
+                'created_by' => $user->id,
+            ]);
+
+            $contact->forceFill([
+                'processing_activity_at' => $inProgressAt,
+                'overdue_at' => $inProgressAt->copy()->addDays(30),
+            ])->saveQuietly();
+
+            return $contact;
+        });
+
+        ContactStatusHistory::create([
+            'contact_id' => $contact->id,
+            'user_id' => $user->id,
+            'old_status' => null,
+            'new_status' => ContactStatus::NOT_PROCESSED->value,
+            'created_at' => Carbon::parse('2026-05-31 21:35:52', 'UTC'),
+        ]);
+
+        ContactStatusHistory::create([
+            'contact_id' => $contact->id,
+            'user_id' => $user->id,
+            'old_status' => ContactStatus::NOT_PROCESSED->value,
+            'new_status' => ContactStatus::ASSIGNED->value,
+            'created_at' => Carbon::parse('2026-06-02 08:38:04', 'UTC'),
+        ]);
+
+        ContactStatusHistory::create([
+            'contact_id' => $contact->id,
+            'user_id' => $user->id,
+            'old_status' => ContactStatus::ASSIGNED->value,
+            'new_status' => ContactStatus::IN_PROGRESS->value,
+            'created_at' => $inProgressAt,
+        ]);
+
+        ContactStatusHistory::create([
+            'contact_id' => $contact->id,
+            'user_id' => $user->id,
+            'old_status' => ContactStatus::IN_PROGRESS->value,
+            'new_status' => ContactStatus::FROZEN->value,
+            'created_at' => $frozenAt,
+        ]);
+
+        $this->artisan(CheckOverdueContacts::class)->assertSuccessful();
+
+        $contact->refresh();
+
+        $this->assertSame(ContactStatus::IN_PROGRESS, $contact->status);
         $this->assertTrue($unfrozenAt->equalTo($contact->processing_activity_at));
+        $this->assertTrue($unfrozenAt->copy()->addDays(30)->equalTo($contact->overdue_at));
+        $this->assertFalse($contact->isOverdue());
     }
 
     public function test_processing_activity_resets_when_returned_from_overdue(): void

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Enums\ContactStatus;
 use App\Models\Contact;
+use App\Observers\ContactObserver;
 use App\Support\Dashboard\DashboardMetricsSnapshotService;
 use Illuminate\Console\Command;
 
@@ -25,36 +26,42 @@ class CheckOverdueContacts extends Command
 
     public function handle(DashboardMetricsSnapshotService $snapshotService): int
     {
-        $unfrozen = 0;
-        $frozenContacts = Contact::query()
-            ->where('status', ContactStatus::FROZEN->value)
-            ->whereNotNull('frozen_until')
-            ->where('frozen_until', '<=', now())
-            ->get();
+        ContactObserver::$allowSystemStatusTransitions = true;
 
-        foreach ($frozenContacts as $contact) {
-            $contact->update(['status' => $contact->statusBeforeFrozen()]);
-            $unfrozen++;
+        try {
+            $unfrozen = 0;
+            $frozenContacts = Contact::query()
+                ->where('status', ContactStatus::FROZEN->value)
+                ->whereNotNull('frozen_until')
+                ->where('frozen_until', '<=', now())
+                ->get();
+
+            foreach ($frozenContacts as $contact) {
+                $contact->update(['status' => $contact->statusBeforeFrozen()]);
+                $unfrozen++;
+            }
+
+            $queueStatuses = ContactStatus::processingQueueValues();
+
+            $overdueContacts = Contact::query()
+                ->whereIn('status', $queueStatuses)
+                ->get()
+                ->filter(fn (Contact $contact): bool => $contact->isOverdue());
+
+            $overdue = 0;
+            foreach ($overdueContacts as $contact) {
+                $contact->update(['status' => ContactStatus::OVERDUE]);
+                $overdue++;
+            }
+
+            $this->info("Unfroze {$unfrozen} contact(s), marked {$overdue} as overdue.");
+
+            $snapshotService->captureForDate(now('UTC'));
+            $this->info('Dashboard metric snapshot saved.');
+
+            return self::SUCCESS;
+        } finally {
+            ContactObserver::$allowSystemStatusTransitions = false;
         }
-
-        $queueStatuses = ContactStatus::processingQueueValues();
-
-        $overdueContacts = Contact::query()
-            ->whereIn('status', $queueStatuses)
-            ->get()
-            ->filter(fn (Contact $contact): bool => $contact->isOverdue());
-
-        $overdue = 0;
-        foreach ($overdueContacts as $contact) {
-            $contact->update(['status' => ContactStatus::OVERDUE]);
-            $overdue++;
-        }
-
-        $this->info("Unfroze {$unfrozen} contact(s), marked {$overdue} as overdue.");
-
-        $snapshotService->captureForDate(now('UTC'));
-        $this->info('Dashboard metric snapshot saved.');
-
-        return self::SUCCESS;
     }
 }

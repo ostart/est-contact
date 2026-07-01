@@ -54,6 +54,11 @@ class Contact extends Model
         'created_by',
     ];
 
+    /**
+     * Предыдущий статус для записи в историю (не сохраняется в БД).
+     */
+    public ?string $pendingStatusHistoryOld = null;
+
     protected $casts = [
         'source' => ContactSource::class,
         'status' => ContactStatus::class,
@@ -127,6 +132,33 @@ class Contact extends Model
         $this->overdue_at = $this->processing_activity_at->copy()->addDays(static::processingTimeoutDays());
     }
 
+    /**
+     * Продлевает дедлайн просрочки на планируемую длительность заморозки (до frozen_until).
+     */
+    public function extendOverdueAtForFreeze(): void
+    {
+        if ($this->frozen_until === null) {
+            return;
+        }
+
+        if ($this->overdue_at === null) {
+            $this->syncOverdueAt();
+        }
+
+        if ($this->overdue_at === null) {
+            return;
+        }
+
+        $frozenUntil = Carbon::parse($this->frozen_until)->utc();
+        $now = now('UTC');
+
+        if ($frozenUntil->lte($now)) {
+            return;
+        }
+
+        $this->overdue_at = $this->overdue_at->copy()->addSeconds($now->diffInSeconds($frozenUntil));
+    }
+
     public function applyProcessingActivityOnSave(): void
     {
         if ($this->isDirty('assigned_leader_id')) {
@@ -154,6 +186,12 @@ class Contact extends Model
             return;
         }
 
+        if ($newStatus === ContactStatus::FROZEN) {
+            $this->extendOverdueAtForFreeze();
+
+            return;
+        }
+
         if (
             in_array($newStatus, [ContactStatus::ASSIGNED, ContactStatus::IN_PROGRESS], true)
             || $oldStatus === ContactStatus::FROZEN
@@ -171,6 +209,11 @@ class Contact extends Model
         }
 
         return is_string($oldStatusValue) ? ContactStatus::tryFrom($oldStatusValue) : null;
+    }
+
+    public function originalStatus(): ?ContactStatus
+    {
+        return $this->resolveOriginalStatus();
     }
 
     public function statusBeforeFrozen(): ContactStatus

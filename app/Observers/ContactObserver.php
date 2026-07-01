@@ -12,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 
 class ContactObserver
 {
+    public static bool $allowSystemStatusTransitions = false;
+
     /**
      * Handle the Contact "created" event.
      */
@@ -39,6 +41,8 @@ class ContactObserver
                 ? $contact->status
                 : ContactStatus::from($contact->status);
 
+            $contact->pendingStatusHistoryOld = $contact->originalStatus()?->value;
+
             if ($newStatus !== ContactStatus::FROZEN) {
                 $contact->frozen_until = null;
             } elseif ($contact->frozen_until === null) {
@@ -59,6 +63,28 @@ class ContactObserver
         $contact->applyProcessingActivityOnSave();
     }
 
+    public function updating(Contact $contact): void
+    {
+        if (! $contact->isDirty('status')) {
+            return;
+        }
+
+        $oldStatus = $contact->originalStatus();
+        $newStatus = $contact->status instanceof ContactStatus
+            ? $contact->status
+            : ContactStatus::from($contact->status);
+
+        if ($oldStatus && ! $oldStatus->canTransitionTo(
+            $newStatus,
+            forManager: auth()->user()?->hasAnyRole(['manager', 'administrator', 'superadmin']) ?? false,
+            system: static::$allowSystemStatusTransitions,
+        )) {
+            throw ValidationException::withMessages([
+                'status' => 'Недопустимый переход статуса.',
+            ]);
+        }
+    }
+
     /**
      * Handle the Contact "updated" event.
      */
@@ -66,23 +92,10 @@ class ContactObserver
     {
         // Проверяем изменение статуса (created_at явно в UTC)
         if ($contact->wasChanged('status')) {
-            $oldStatusValue = $contact->getRawOriginal('status');
-            $oldStatus = is_string($oldStatusValue)
-                ? ContactStatus::tryFrom($oldStatusValue)
-                : null;
+            $oldStatusValue = $contact->pendingStatusHistoryOld;
             $newStatus = $contact->status instanceof ContactStatus
                 ? $contact->status
                 : ContactStatus::from($contact->status);
-
-            if ($oldStatus && ! $oldStatus->canTransitionTo(
-                $newStatus,
-                forManager: auth()->user()?->hasAnyRole(['manager', 'administrator', 'superadmin']) ?? false,
-                system: app()->runningInConsole(),
-            )) {
-                throw ValidationException::withMessages([
-                    'status' => 'Недопустимый переход статуса.',
-                ]);
-            }
 
             ContactStatusHistory::create([
                 'contact_id' => $contact->id,
@@ -91,6 +104,8 @@ class ContactObserver
                 'new_status' => $newStatus->value,
                 'created_at' => Carbon::now('UTC'),
             ]);
+
+            $contact->pendingStatusHistoryOld = null;
         }
 
         // Проверяем назначение лидера (wasChanged — после save; isDirty в updated уже сброшен)
