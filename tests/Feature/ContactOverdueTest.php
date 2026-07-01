@@ -397,6 +397,77 @@ class ContactOverdueTest extends TestCase
         );
     }
 
+    public function test_leader_comment_resets_overdue_timer_when_user_id_type_differs(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-11 12:00:00', 'UTC'));
+
+        $user = User::factory()->create();
+        $commentAt = Carbon::parse('2026-06-10 12:00:00', 'UTC');
+
+        $contact = $this->createContact(ContactStatus::ASSIGNED, [
+            ['old_status' => null, 'new_status' => ContactStatus::NOT_PROCESSED->value, 'created_at' => Carbon::parse('2026-01-01 10:00:00', 'UTC')],
+            ['old_status' => ContactStatus::NOT_PROCESSED->value, 'new_status' => ContactStatus::ASSIGNED->value, 'created_at' => Carbon::parse('2026-01-01 10:00:00', 'UTC')],
+        ], Carbon::parse('2026-01-01 10:00:00', 'UTC'), $user);
+
+        Carbon::setTestNow($commentAt);
+
+        ContactComment::create([
+            'contact_id' => $contact->id,
+            'user_id' => (string) $user->id,
+            'comment' => 'Связался с контактом',
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-06-11 12:00:00', 'UTC'));
+
+        $contact->refresh();
+
+        $this->assertFalse($contact->isOverdue());
+        $this->assertTrue($commentAt->copy()->addDays(30)->equalTo($contact->overdue_at));
+    }
+
+    public function test_leader_comment_on_frozen_contact_extends_overdue_at(): void
+    {
+        $inProgressAt = Carbon::parse('2026-06-03 20:19:11', 'UTC');
+        $frozenUntil = Carbon::parse('2026-06-13 03:00:03', 'UTC');
+        $commentAt = Carbon::parse('2026-06-08 12:00:00', 'UTC');
+        $expectedOverdueAt = $commentAt->copy()
+            ->addDays(30)
+            ->addSeconds($commentAt->diffInSeconds($frozenUntil));
+
+        $user = User::factory()->create();
+
+        $contact = Contact::withoutEvents(fn () => Contact::create([
+            'full_name' => 'Test Contact',
+            'phone' => '+79990001122',
+            'status' => ContactStatus::FROZEN,
+            'frozen_until' => $frozenUntil,
+            'assigned_leader_id' => $user->id,
+            'created_by' => $user->id,
+        ]));
+
+        $contact->forceFill([
+            'processing_activity_at' => $inProgressAt,
+            'overdue_at' => $inProgressAt->copy()->addDays(30)->addSeconds(
+                Carbon::parse('2026-06-03 20:19:50', 'UTC')->diffInSeconds($frozenUntil),
+            ),
+        ])->saveQuietly();
+
+        Carbon::setTestNow($commentAt);
+
+        ContactComment::create([
+            'contact_id' => $contact->id,
+            'user_id' => $user->id,
+            'comment' => 'Пока заморожен',
+            'created_at' => $commentAt,
+        ]);
+
+        $contact->refresh();
+
+        $this->assertSame(ContactStatus::FROZEN, $contact->status);
+        $this->assertTrue($commentAt->equalTo($contact->processing_activity_at));
+        $this->assertTrue($expectedOverdueAt->equalTo($contact->overdue_at));
+    }
+
     public function test_manager_comment_does_not_reset_overdue_timer(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-11 12:00:00', 'UTC'));

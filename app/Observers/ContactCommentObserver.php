@@ -17,12 +17,16 @@ class ContactCommentObserver
             return;
         }
 
-        if ($comment->user_id !== $contact->assigned_leader_id) {
+        if ((int) $comment->user_id !== (int) $contact->assigned_leader_id) {
             return;
         }
 
         $activityAt = Carbon::parse($comment->created_at)->utc();
         $contact->touchProcessingActivity($activityAt);
+
+        if ($contact->status === ContactStatus::FROZEN) {
+            $contact->extendOverdueAtForFreeze();
+        }
 
         if ($contact->status === ContactStatus::OVERDUE) {
             $oldStatus = $contact->status->value;
