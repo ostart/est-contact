@@ -63,6 +63,7 @@ class ContactResource extends Resource
                         PhoneDisplay::textInput(
                             Components\TextInput::make('phone')
                                 ->label('Телефон')
+                                ->default('+7')
                                 ->tel()
                                 ->required()
                                 ->maxLength(32)

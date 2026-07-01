@@ -73,6 +73,7 @@ class ManagementResource extends Resource
                                 PhoneDisplay::textInput(
                                     Components\TextInput::make('phone')
                                         ->label('Телефон')
+                                        ->default('+7')
                                         ->required()
                                         ->maxLength(32)
                                         ->tel()
