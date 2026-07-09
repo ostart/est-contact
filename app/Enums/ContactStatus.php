@@ -72,7 +72,7 @@ enum ContactStatus: string
             self::cases(),
         );
 
-        return "CASE\n" . implode("\n", $cases) . "\n    ELSE 8\nEND";
+        return "CASE\n".implode("\n", $cases)."\n    ELSE 8\nEND";
     }
 
     /**
@@ -96,7 +96,7 @@ enum ContactStatus: string
         if ($this->isFinal()) {
             if ($forManager) {
                 return array_values(array_filter(
-                    [self::NOT_PROCESSED, self::ASSIGNED, self::SUCCESS, self::FAILED],
+                    [self::NOT_PROCESSED, self::ASSIGNED, self::IN_PROGRESS, self::SUCCESS, self::FAILED],
                     fn (self $status) => $status !== $this,
                 ));
             }
@@ -149,6 +149,10 @@ enum ContactStatus: string
     public function getTransitionLabel(?self $from = null): string
     {
         if ($from === self::FROZEN && $this === self::IN_PROGRESS) {
+            return 'Вернуть в работу';
+        }
+
+        if ($from === self::FAILED && $this === self::IN_PROGRESS) {
             return 'Вернуть в работу';
         }
 

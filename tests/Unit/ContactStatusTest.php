@@ -53,6 +53,17 @@ class ContactStatusTest extends TestCase
         );
     }
 
+    public function test_manager_can_reopen_failed_contact_to_in_progress(): void
+    {
+        $this->assertTrue(
+            ContactStatus::FAILED->canTransitionTo(ContactStatus::IN_PROGRESS, forManager: true),
+        );
+
+        $this->assertTrue(
+            ContactStatus::SUCCESS->canTransitionTo(ContactStatus::IN_PROGRESS, forManager: true),
+        );
+    }
+
     public function test_system_can_mark_queue_statuses_as_overdue(): void
     {
         $this->assertTrue(
@@ -110,6 +121,14 @@ class ContactStatusTest extends TestCase
         $this->assertSame(
             'Вернуть в работу',
             ContactStatus::IN_PROGRESS->getTransitionLabel(ContactStatus::FROZEN),
+        );
+    }
+
+    public function test_failed_reopen_label(): void
+    {
+        $this->assertSame(
+            'Вернуть в работу',
+            ContactStatus::IN_PROGRESS->getTransitionLabel(ContactStatus::FAILED),
         );
     }
 

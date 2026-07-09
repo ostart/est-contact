@@ -11,9 +11,10 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Contact extends Model
 {
@@ -108,6 +109,13 @@ class Contact extends Model
     public function statusHistories(): HasMany
     {
         return $this->hasMany(ContactStatusHistory::class)->orderByDesc('created_at');
+    }
+
+    public function latestFailedStatusHistory(): HasOne
+    {
+        return $this->hasOne(ContactStatusHistory::class)
+            ->where('new_status', ContactStatus::FAILED->value)
+            ->latestOfMany('created_at');
     }
 
     public static function processingTimeoutDays(): int
@@ -393,4 +401,3 @@ class Contact extends Model
             ->select("{$table}.*");
     }
 }
-

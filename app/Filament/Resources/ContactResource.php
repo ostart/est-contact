@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ContactResource\Pages;
+use App\Filament\Resources\ContactResource\Pages\ListContacts;
 use App\Filament\Support\ContactPhotoFields;
 use App\Filament\Support\ContactTableColumns;
 use App\Filament\Support\ContactTableSearch;
@@ -16,9 +17,9 @@ use Filament\Actions;
 use Filament\Forms\Components;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components as SchemaComponents;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables;
-use Filament\Schemas\Components\Utilities\Set;
 use Filament\Tables\Columns;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,7 +29,7 @@ class ContactResource extends Resource
 {
     protected static ?string $model = Contact::class;
 
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-users';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
     protected static ?string $navigationLabel = 'Мои контакты';
 
@@ -138,6 +139,16 @@ class ContactResource extends Resource
         $applyMyContactsScope = fn (Builder $query): Builder => $query
             ->where('assigned_leader_id', auth()->id());
 
+        $applyMyContactsScopeUnlessRejectedTab = function (Builder $query) use ($applyMyContactsScope): Builder {
+            $livewire = \Livewire\Livewire::current();
+
+            if ($livewire instanceof ListContacts && $livewire->isRejectedTab()) {
+                return $query;
+            }
+
+            return $applyMyContactsScope($query);
+        };
+
         $table = $table
             ->columns([
                 Columns\TextColumn::make('full_name')
@@ -183,6 +194,28 @@ class ContactResource extends Resource
 
                 ContactTableColumns::overdueAt(),
 
+                Columns\TextColumn::make('latestFailedStatusHistory.created_at')
+                    ->label('Дата отказа')
+                    ->formatStateUsing(fn ($state): string => filled($state) ? (format_datetime_moscow($state) ?? '—') : '—')
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+
+                        return $query
+                            ->leftJoin('contact_status_histories as failed_at_histories', function ($join): void {
+                                $join->on('contacts.id', '=', 'failed_at_histories.contact_id')
+                                    ->where('failed_at_histories.new_status', ContactStatus::FAILED->value)
+                                    ->whereRaw('failed_at_histories.created_at = (
+                                        SELECT MAX(csh.created_at)
+                                        FROM contact_status_histories csh
+                                        WHERE csh.contact_id = contacts.id
+                                        AND csh.new_status = ?
+                                    )', [ContactStatus::FAILED->value]);
+                            })
+                            ->orderBy('failed_at_histories.created_at', $direction)
+                            ->select('contacts.*');
+                    })
+                    ->visible(fn (ListContacts $livewire): bool => $livewire->isRejectedTab()),
+
                 Columns\TextColumn::make('assignedLeader.name')
                     ->label('Ответственный')
                     ->searchable()
@@ -203,12 +236,39 @@ class ContactResource extends Resource
             ]);
 
         if ($leaderFiltersUiLocked) {
-            // Только фильтр по статусу; остальные фильтры скрыты. Отбор «Мои контакты» — в запросе.
+            // Только фильтр по статусу; отбор «Мои контакты» — в запросе (кроме вкладки «Отказы»).
             $table = $table
                 ->filters([
                     ContactTableColumns::statusFilter(),
                 ])
-                ->modifyQueryUsing($applyMyContactsScope);
+                ->modifyQueryUsing($applyMyContactsScopeUnlessRejectedTab);
+        } elseif ($isLeader) {
+            $table = $table
+                ->filters([
+                    ContactTableColumns::statusFilter(),
+                    Tables\Filters\SelectFilter::make('source')
+                        ->label('Источник')
+                        ->options(ContactSource::options())
+                        ->native(false),
+
+                    Tables\Filters\SelectFilter::make('assigned_leader_id')
+                        ->label('Ответственный')
+                        ->relationship('assignedLeader', 'name')
+                        ->searchable()
+                        ->preload(),
+
+                    Tables\Filters\Filter::make('my_contacts')
+                        ->label('Мои контакты')
+                        ->query(fn (Builder $query): Builder => $query
+                            ->where('assigned_leader_id', auth()->id())
+                        )
+                        ->default(true)
+                        ->visible(fn (ListContacts $livewire): bool => ! $livewire->isRejectedTab()),
+
+                    Tables\Filters\SelectFilter::make('district')
+                        ->label('Район')
+                        ->options(fn () => Contact::distinct()->pluck('district', 'district')->filter()),
+                ]);
         } else {
             $table = $table
                 ->filters([
