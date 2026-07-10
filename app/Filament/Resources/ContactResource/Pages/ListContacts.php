@@ -16,6 +16,13 @@ class ListContacts extends ListRecords implements PersistsContactTablePreference
 {
     use HasPersistedContactTablePreferences;
 
+    public const TAB_ALL = 'all';
+
+    public const TAB_REJECTED = 'rejected';
+
+    /** @deprecated Renamed to {@see self::TAB_ALL}; normalized on mount. */
+    private const LEGACY_TAB_ALL = 'active';
+
     protected static string $resource = ContactResource::class;
 
     protected function getContactTablePreferencesKey(): string
@@ -23,9 +30,16 @@ class ListContacts extends ListRecords implements PersistsContactTablePreference
         return 'contacts';
     }
 
+    public function mount(): void
+    {
+        parent::mount();
+
+        $this->normalizeActiveTab();
+    }
+
     public function getDefaultActiveTab(): string|int|null
     {
-        return 'active';
+        return self::TAB_ALL;
     }
 
     /**
@@ -39,37 +53,37 @@ class ListContacts extends ListRecords implements PersistsContactTablePreference
             return [];
         }
 
-        $excludeFinalAndFrozen = fn (Builder $query): Builder => $query->whereNotIn('status', [
-            ContactStatus::SUCCESS->value,
-            ContactStatus::FAILED->value,
-            ContactStatus::FROZEN->value,
-        ]);
-
         return [
-            'active' => Tab::make('Активные')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $excludeFinalAndFrozen($query)),
+            self::TAB_ALL => Tab::make('Все'),
 
-            'rejected' => Tab::make('Отказы')
+            self::TAB_REJECTED => Tab::make('Отказы')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
                     ->where('status', ContactStatus::FAILED->value)
                     ->with('latestFailedStatusHistory')),
         ];
     }
 
+    public function isAllTab(): bool
+    {
+        return in_array($this->activeTab, [self::TAB_ALL, self::LEGACY_TAB_ALL], true);
+    }
+
     public function isRejectedTab(): bool
     {
-        return $this->activeTab === 'rejected';
+        return $this->activeTab === self::TAB_REJECTED;
     }
 
     public function updatedActiveTab(): void
     {
         parent::updatedActiveTab();
 
+        $this->normalizeActiveTab();
+
         if (! auth()->user()->can_use_contact_filters) {
             return;
         }
 
-        if ($this->activeTab === 'rejected') {
+        if ($this->isRejectedTab()) {
             if (is_array($this->tableFilters)) {
                 data_set($this->tableFilters, 'my_contacts.isActive', false);
             }
@@ -77,7 +91,7 @@ class ListContacts extends ListRecords implements PersistsContactTablePreference
             return;
         }
 
-        if ($this->activeTab === 'active' && is_array($this->tableFilters)) {
+        if ($this->isAllTab() && is_array($this->tableFilters)) {
             data_set($this->tableFilters, 'my_contacts.isActive', true);
         }
     }
@@ -93,5 +107,12 @@ class ListContacts extends ListRecords implements PersistsContactTablePreference
         }
 
         return $actions;
+    }
+
+    private function normalizeActiveTab(): void
+    {
+        if ($this->activeTab === self::LEGACY_TAB_ALL) {
+            $this->activeTab = self::TAB_ALL;
+        }
     }
 }
