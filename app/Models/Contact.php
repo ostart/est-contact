@@ -63,9 +63,9 @@ class Contact extends Model
     protected $casts = [
         'source' => ContactSource::class,
         'status' => ContactStatus::class,
-        'frozen_until' => 'datetime:UTC',
-        'processing_activity_at' => 'datetime:UTC',
-        'overdue_at' => 'datetime:UTC',
+        'frozen_until' => 'datetime',
+        'processing_activity_at' => 'datetime',
+        'overdue_at' => 'datetime',
     ];
 
     protected function phone(): Attribute

@@ -5,6 +5,7 @@ namespace App\Filament\Support;
 use App\Enums\ContactStatus;
 use App\Models\Contact;
 use Carbon\Carbon;
+use DateTimeInterface;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Components\Utilities\Get;
@@ -68,13 +69,34 @@ class ContactFreezeFields
 
     public static function formatFrozenUntilDisplay(mixed $value): ?string
     {
+        $frozenUntil = self::resolveFrozenUntilValue($value);
+
+        return $frozenUntil?->timezone('Europe/Moscow')->format('d.m.Y');
+    }
+
+    public static function resolveFrozenUntilValue(mixed $value): ?Carbon
+    {
         if ($value === null || $value === '') {
             return null;
         }
 
-        return Carbon::parse($value, 'UTC')
-            ->timezone('Europe/Moscow')
-            ->format('d.m.Y');
+        if ($value instanceof Carbon) {
+            return $value->copy()->utc();
+        }
+
+        if ($value instanceof DateTimeInterface) {
+            return Carbon::instance($value)->utc();
+        }
+
+        if (is_numeric($value)) {
+            return Carbon::createFromTimestamp((int) $value, 'UTC');
+        }
+
+        if (is_string($value) && preg_match('/^\d+UTC/', $value)) {
+            return Carbon::createFromTimestamp((int) $value, 'UTC');
+        }
+
+        return Carbon::parse($value, 'UTC');
     }
 
     /**
@@ -169,8 +191,9 @@ class ContactFreezeFields
      */
     public static function splitFrozenUntilForForm(array $data): array
     {
-        if (! empty($data['frozen_until'])) {
-            $data['freeze_date'] = Carbon::parse($data['frozen_until'])
+        $frozenUntil = self::resolveFrozenUntilValue($data['frozen_until'] ?? null);
+        if ($frozenUntil !== null) {
+            $data['freeze_date'] = $frozenUntil
                 ->timezone('Europe/Moscow')
                 ->toDateString();
         }
