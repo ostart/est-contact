@@ -93,34 +93,26 @@ enum ContactStatus: string
      */
     public function allowedTransitions(bool $forManager = false): array
     {
-        if ($this->isFinal()) {
-            if ($forManager) {
-                return array_values(array_filter(
-                    [self::NOT_PROCESSED, self::ASSIGNED, self::IN_PROGRESS, self::SUCCESS, self::FAILED],
-                    fn (self $status) => $status !== $this,
-                ));
-            }
+        if ($forManager) {
+            return array_values(array_filter(
+                self::cases(),
+                fn (self $status) => $status !== $this,
+            ));
+        }
 
+        if ($this->isFinal()) {
             return array_values(array_filter(
                 [self::IN_PROGRESS, self::SUCCESS, self::FAILED],
                 fn (self $status) => $status !== $this,
             ));
         }
 
-        $withNotProcessed = fn (array $targets): array => $forManager
-            ? array_merge([self::NOT_PROCESSED], $targets)
-            : $targets;
-
         return match ($this) {
-            self::NOT_PROCESSED => $forManager
-                ? [self::ASSIGNED, self::IN_PROGRESS]
-                : [self::IN_PROGRESS],
-            self::ASSIGNED => $withNotProcessed([self::IN_PROGRESS]),
-            self::IN_PROGRESS => $withNotProcessed([self::FROZEN, self::SUCCESS, self::FAILED]),
-            self::FROZEN => $forManager
-                ? [self::ASSIGNED, self::IN_PROGRESS]
-                : [self::IN_PROGRESS],
-            self::OVERDUE => $withNotProcessed([self::ASSIGNED, self::IN_PROGRESS, self::SUCCESS, self::FAILED]),
+            self::NOT_PROCESSED => [self::IN_PROGRESS],
+            self::ASSIGNED => [self::IN_PROGRESS],
+            self::IN_PROGRESS => [self::FROZEN, self::SUCCESS, self::FAILED],
+            self::FROZEN => [self::IN_PROGRESS],
+            self::OVERDUE => [self::ASSIGNED, self::IN_PROGRESS, self::SUCCESS, self::FAILED],
             default => [],
         };
     }
@@ -137,10 +129,6 @@ enum ContactStatus: string
 
         if ($includeCurrent) {
             $options = [$this->value => $this->getLabel()] + $options;
-        }
-
-        if ($forManager && in_array($this, [self::ASSIGNED, self::IN_PROGRESS], true)) {
-            $options[self::OVERDUE->value] = self::OVERDUE->getLabel();
         }
 
         return $options;
@@ -170,16 +158,9 @@ enum ContactStatus: string
                 || ($this === self::FROZEN && in_array($target, [self::ASSIGNED, self::IN_PROGRESS], true));
         }
 
-        if ($forManager && in_array($this, [self::ASSIGNED, self::IN_PROGRESS], true) && $target === self::OVERDUE) {
-            return true;
-        }
-
         return in_array($target, $this->allowedTransitions($forManager), true);
     }
 
-    /**
-     * @return array<string, string>
-     */
     /**
      * @return array<string, string>
      */

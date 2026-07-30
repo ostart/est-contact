@@ -41,27 +41,23 @@ class ContactStatusTest extends TestCase
         );
     }
 
-    public function test_manager_can_return_final_contact_to_assigned(): void
+    public function test_manager_can_transition_from_any_status_to_any_other(): void
     {
-        $this->assertContains(
-            ContactStatus::ASSIGNED,
-            ContactStatus::FAILED->allowedTransitions(forManager: true),
-        );
+        foreach (ContactStatus::cases() as $from) {
+            $allowed = $from->allowedTransitions(forManager: true);
 
-        $this->assertTrue(
-            ContactStatus::SUCCESS->canTransitionTo(ContactStatus::ASSIGNED, forManager: true),
-        );
-    }
+            foreach (ContactStatus::cases() as $to) {
+                if ($from === $to) {
+                    $this->assertTrue($from->canTransitionTo($to, forManager: true));
+                    $this->assertNotContains($to, $allowed);
 
-    public function test_manager_can_reopen_failed_contact_to_in_progress(): void
-    {
-        $this->assertTrue(
-            ContactStatus::FAILED->canTransitionTo(ContactStatus::IN_PROGRESS, forManager: true),
-        );
+                    continue;
+                }
 
-        $this->assertTrue(
-            ContactStatus::SUCCESS->canTransitionTo(ContactStatus::IN_PROGRESS, forManager: true),
-        );
+                $this->assertContains($to, $allowed);
+                $this->assertTrue($from->canTransitionTo($to, forManager: true));
+            }
+        }
     }
 
     public function test_system_can_mark_queue_statuses_as_overdue(): void
@@ -78,11 +74,6 @@ class ContactStatusTest extends TestCase
     public function test_assigned_moves_to_in_progress_and_in_progress_can_freeze(): void
     {
         $this->assertSame(
-            [ContactStatus::NOT_PROCESSED, ContactStatus::IN_PROGRESS],
-            ContactStatus::ASSIGNED->allowedTransitions(forManager: true),
-        );
-
-        $this->assertSame(
             [ContactStatus::IN_PROGRESS],
             ContactStatus::ASSIGNED->allowedTransitions(),
         );
@@ -92,13 +83,8 @@ class ContactStatusTest extends TestCase
         $this->assertTrue(ContactStatus::IN_PROGRESS->canTransitionTo(ContactStatus::FROZEN));
     }
 
-    public function test_frozen_can_return_to_assigned_or_in_progress(): void
+    public function test_frozen_can_return_to_in_progress_for_leader(): void
     {
-        $this->assertSame(
-            [ContactStatus::ASSIGNED, ContactStatus::IN_PROGRESS],
-            ContactStatus::FROZEN->allowedTransitions(forManager: true),
-        );
-
         $this->assertSame(
             [ContactStatus::IN_PROGRESS],
             ContactStatus::FROZEN->allowedTransitions(),
@@ -107,12 +93,8 @@ class ContactStatusTest extends TestCase
         $this->assertTrue(ContactStatus::FROZEN->canTransitionTo(ContactStatus::IN_PROGRESS));
         $this->assertFalse(ContactStatus::FROZEN->canTransitionTo(ContactStatus::ASSIGNED));
         $this->assertTrue(
-            ContactStatus::FROZEN->canTransitionTo(ContactStatus::ASSIGNED, forManager: true),
-        );
-        $this->assertTrue(
             ContactStatus::FROZEN->canTransitionTo(ContactStatus::IN_PROGRESS, system: true),
         );
-        $this->assertFalse(ContactStatus::FROZEN->canTransitionTo(ContactStatus::SUCCESS, forManager: true));
         $this->assertFalse(ContactStatus::OVERDUE->canTransitionTo(ContactStatus::FROZEN));
     }
 
@@ -142,13 +124,8 @@ class ContactStatusTest extends TestCase
         $this->assertNotSame(ContactStatus::FROZEN->getColor(), ContactStatus::ASSIGNED->getColor());
     }
 
-    public function test_not_processed_can_enter_queue_or_work(): void
+    public function test_not_processed_can_enter_work_for_leader(): void
     {
-        $this->assertSame(
-            [ContactStatus::ASSIGNED, ContactStatus::IN_PROGRESS],
-            ContactStatus::NOT_PROCESSED->allowedTransitions(forManager: true),
-        );
-
         $this->assertSame(
             [ContactStatus::IN_PROGRESS],
             ContactStatus::NOT_PROCESSED->allowedTransitions(),
