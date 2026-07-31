@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\URL;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -193,6 +194,18 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail, Has
     public function assignedContacts(): HasMany
     {
         return $this->hasMany(Contact::class, 'assigned_leader_id');
+    }
+
+    /**
+     * Лидеры, которым можно назначить контакт на обработку.
+     */
+    public function scopeAssignableAsContactLeader(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('email_verified_at')
+            ->where('is_approved', true)
+            ->where('is_banned', false)
+            ->whereHas('roles', fn (Builder $q) => $q->where('name', 'leader'));
     }
 
     public function comments(): HasMany

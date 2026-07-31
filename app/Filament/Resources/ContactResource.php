@@ -11,8 +11,10 @@ use App\Filament\Support\ContactTableColumns;
 use App\Filament\Support\ContactTableSearch;
 use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
+use App\Models\User;
 use App\Support\PhoneNumberHelper;
 use BackedEnum;
+use Closure;
 use Filament\Actions;
 use Filament\Forms\Components;
 use Filament\Resources\Resource;
@@ -115,12 +117,23 @@ class ContactResource extends Resource
                             ->relationship(
                                 'assignedLeader',
                                 'name',
-                                fn (Builder $query) => $query->whereNotNull('email_verified_at')->where('is_approved', true)
+                                fn (Builder $query) => $query->assignableAsContactLeader()
                             )
                             ->searchable()
                             ->preload()
                             ->requiredUnless('status', ContactStatus::NOT_PROCESSED->value)
                             ->prohibitedIf('status', ContactStatus::NOT_PROCESSED->value)
+                            ->rule(static function (): Closure {
+                                return function (string $attribute, mixed $value, Closure $fail): void {
+                                    if (! filled($value)) {
+                                        return;
+                                    }
+
+                                    if (! User::query()->whereKey($value)->assignableAsContactLeader()->exists()) {
+                                        $fail('Нельзя назначить контакт заблокированному лидеру.');
+                                    }
+                                };
+                            })
                             ->validationMessages([
                                 'required_unless' => 'При статусе отличном от «Не обработан» необходимо указать ответственного лидера.',
                                 'prohibited_if' => 'При статусе «Не обработан» ответственный лидер должен быть не выбран.',
