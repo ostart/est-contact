@@ -15,12 +15,13 @@ class ContactStatusTest extends TestCase
         );
 
         $this->assertSame(
-            [ContactStatus::IN_PROGRESS, ContactStatus::SUCCESS],
+            [ContactStatus::IN_PROGRESS],
             ContactStatus::FAILED->allowedTransitions(),
         );
 
         $this->assertTrue(ContactStatus::SUCCESS->canTransitionTo(ContactStatus::FAILED));
         $this->assertTrue(ContactStatus::SUCCESS->canTransitionTo(ContactStatus::IN_PROGRESS));
+        $this->assertFalse(ContactStatus::FAILED->canTransitionTo(ContactStatus::SUCCESS));
         $this->assertFalse(ContactStatus::FAILED->canTransitionTo(ContactStatus::NOT_PROCESSED));
         $this->assertFalse(ContactStatus::SUCCESS->canTransitionTo(ContactStatus::ASSIGNED));
     }
@@ -95,7 +96,13 @@ class ContactStatusTest extends TestCase
         $this->assertTrue(
             ContactStatus::FROZEN->canTransitionTo(ContactStatus::IN_PROGRESS, system: true),
         );
+        $this->assertSame(
+            [ContactStatus::IN_PROGRESS],
+            ContactStatus::OVERDUE->allowedTransitions(),
+        );
         $this->assertFalse(ContactStatus::OVERDUE->canTransitionTo(ContactStatus::FROZEN));
+        $this->assertFalse(ContactStatus::OVERDUE->canTransitionTo(ContactStatus::SUCCESS));
+        $this->assertFalse(ContactStatus::OVERDUE->canTransitionTo(ContactStatus::ASSIGNED));
     }
 
     public function test_frozen_unfreeze_label(): void

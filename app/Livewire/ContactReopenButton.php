@@ -31,10 +31,17 @@ class ContactReopenButton extends Component implements HasActions, HasSchemas
         $this->contactId = $contactId;
     }
 
-    public function reopenFailedAction(): Action
+    public function takeToWorkAction(): Action
     {
-        return Action::make('reopenFailed')
-            ->label('Вернуть в работу')
+        $contact = $this->resolveContact();
+        $status = $this->resolveStatus($contact);
+        $isTakeToWork = ContactReopenService::usesTakeToWorkLabel($status);
+
+        $label = $isTakeToWork ? 'Взять в работу' : 'Вернуть в работу';
+        $submitLabel = $isTakeToWork ? 'Взять' : 'Вернуть';
+
+        return Action::make('takeToWork')
+            ->label($label)
             ->icon('heroicon-o-arrow-uturn-left')
             ->color('primary')
             ->size(Size::Small)
@@ -43,17 +50,17 @@ class ContactReopenButton extends Component implements HasActions, HasSchemas
             ->formWrapper(false)
             ->modalIcon('heroicon-o-arrow-uturn-left')
             ->modalIconColor('primary')
-            ->modalHeading('Вернуть в работу')
+            ->modalHeading($label)
             ->modalDescription('Контакт будет назначен вам и переведён в статус «В работе».')
-            ->modalSubmitActionLabel('Вернуть')
+            ->modalSubmitActionLabel($submitLabel)
             ->modalCancelActionLabel('Отмена')
             ->modalWidth(Width::Medium)
             ->action(function (): void {
-                $this->reopen();
+                $this->takeToWork();
             });
     }
 
-    public function reopen(): void
+    public function takeToWork(): void
     {
         $user = auth()->user();
 
@@ -66,15 +73,12 @@ class ContactReopenButton extends Component implements HasActions, HasSchemas
             return;
         }
 
-        $contact = Contact::query()->findOrFail($this->contactId);
+        $contact = $this->resolveContact();
+        $status = $this->resolveStatus($contact);
 
-        $status = $contact->status instanceof ContactStatus
-            ? $contact->status
-            : ContactStatus::from((string) $contact->status);
-
-        if ($status !== ContactStatus::FAILED) {
+        if (! ContactReopenService::isTakeToWorkSource($status)) {
             Notification::make()
-                ->title('Контакт уже не в статусе «Отказ»')
+                ->title('Контакт уже нельзя взять в работу из текущего статуса')
                 ->warning()
                 ->send();
 
@@ -84,10 +88,10 @@ class ContactReopenButton extends Component implements HasActions, HasSchemas
         }
 
         try {
-            ContactReopenService::reopenFromFailed($contact, $user);
+            ContactReopenService::takeToWork($contact, $user);
         } catch (ValidationException $exception) {
             Notification::make()
-                ->title('Не удалось вернуть в работу')
+                ->title('Не удалось перевести в работу')
                 ->body(collect($exception->errors())->flatten()->first() ?: 'Недопустимый переход статуса.')
                 ->danger()
                 ->send();
@@ -97,7 +101,7 @@ class ContactReopenButton extends Component implements HasActions, HasSchemas
             report($exception);
 
             Notification::make()
-                ->title('Не удалось вернуть в работу')
+                ->title('Не удалось перевести в работу')
                 ->body('Произошла ошибка. Попробуйте ещё раз.')
                 ->danger()
                 ->send();
@@ -106,7 +110,9 @@ class ContactReopenButton extends Component implements HasActions, HasSchemas
         }
 
         Notification::make()
-            ->title('Контакт взят в работу')
+            ->title(ContactReopenService::usesTakeToWorkLabel($status)
+                ? 'Контакт взят в работу'
+                : 'Контакт возвращён в работу')
             ->success()
             ->send();
 
@@ -116,5 +122,17 @@ class ContactReopenButton extends Component implements HasActions, HasSchemas
     public function render(): View
     {
         return view('livewire.contact-reopen-button');
+    }
+
+    protected function resolveContact(): Contact
+    {
+        return Contact::query()->findOrFail($this->contactId);
+    }
+
+    protected function resolveStatus(Contact $contact): ContactStatus
+    {
+        return $contact->status instanceof ContactStatus
+            ? $contact->status
+            : ContactStatus::from((string) $contact->status);
     }
 }

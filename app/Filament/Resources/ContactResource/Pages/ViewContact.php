@@ -10,6 +10,7 @@ use App\Filament\Support\ContactFreezeFields;
 use App\Filament\Support\ContactPhotoFields;
 use App\Filament\Support\PhoneDisplay;
 use App\Livewire\ContactReopenButton;
+use App\Support\ContactReopenService;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Infolists\Components;
@@ -38,7 +39,7 @@ class ViewContact extends ViewRecord
             ->modalSubmitActionLabel('Сохранить')
             ->modalCancelActionLabel('Отмена')
             ->visible(fn (): bool => $this->canLeaderEditContactStatus()
-                && $this->getContactStatus() !== ContactStatus::FAILED)
+                && ! ContactReopenService::isTakeToWorkSource($this->getContactStatus()))
             ->fillForm(fn (): array => [
                 'status' => $this->resolveDefaultStatusFormValue(),
             ])
@@ -99,7 +100,7 @@ class ViewContact extends ViewRecord
     public function infolist(Schema $schema): Schema
     {
         $status = $this->getContactStatus();
-        $isFailed = $status === ContactStatus::FAILED;
+        $usesTakeToWorkButton = ContactReopenService::isTakeToWorkSource($status);
 
         return $schema
             ->components([
@@ -162,12 +163,12 @@ class ViewContact extends ViewRecord
                                     'contactId' => $this->getRecord()->getKey(),
                                 ])
                                 ->key(fn (): string => 'contact-reopen-'.$this->getRecord()->getKey())
-                                ->visible($isFailed),
+                                ->visible($usesTakeToWorkButton),
                             SchemaComponents\Actions::make([
                                 $this->changeStatusAction(),
                             ])
                                 ->key('contact-status-actions')
-                                ->visible(! $isFailed),
+                                ->visible(! $usesTakeToWorkButton),
                         ])
                             ->extraAttributes([
                                 'class' => 'fi-contact-status-row',
@@ -233,35 +234,14 @@ class ViewContact extends ViewRecord
     protected function getAvailableStatusOptions(): array
     {
         $status = $this->getContactStatus();
-        $isAssignedToCurrentUser = $this->record->assigned_leader_id === auth()->id();
-        $takeToWorkOption = [ContactStatus::IN_PROGRESS->value => 'Взять в работу'];
 
-        return match (true) {
-            $status === ContactStatus::NOT_PROCESSED => $takeToWorkOption,
-            $status === ContactStatus::ASSIGNED && $isAssignedToCurrentUser => array_merge(
-                $takeToWorkOption,
-                collect($status->transitionOptions(includeCurrent: false))
-                    ->except([ContactStatus::IN_PROGRESS->value])
-                    ->all(),
-            ),
-            default => collect($status->transitionOptions(includeCurrent: false))
-                ->when(
-                    ! $status->isFinal(),
-                    fn ($options) => $options->except([ContactStatus::OVERDUE->value]),
-                )
-                ->all(),
-        };
+        return collect($status->transitionOptions(includeCurrent: false))
+            ->except([ContactStatus::OVERDUE->value])
+            ->all();
     }
 
     protected function resolveDefaultStatusFormValue(): string
     {
-        $status = $this->getContactStatus();
-        $isLeader = auth()->user()->hasRole('leader');
-
-        return match (true) {
-            $status === ContactStatus::FROZEN && $isLeader => ContactStatus::IN_PROGRESS->value,
-            $status === ContactStatus::FROZEN => $this->record->statusBeforeFrozen()->value,
-            default => $status->value,
-        };
+        return $this->getContactStatus()->value;
     }
 }

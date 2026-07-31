@@ -101,10 +101,11 @@ enum ContactStatus: string
         }
 
         if ($this->isFinal()) {
-            return array_values(array_filter(
-                [self::IN_PROGRESS, self::SUCCESS, self::FAILED],
-                fn (self $status) => $status !== $this,
-            ));
+            return match ($this) {
+                self::SUCCESS => [self::IN_PROGRESS, self::FAILED],
+                self::FAILED => [self::IN_PROGRESS],
+                default => [],
+            };
         }
 
         return match ($this) {
@@ -112,7 +113,7 @@ enum ContactStatus: string
             self::ASSIGNED => [self::IN_PROGRESS],
             self::IN_PROGRESS => [self::FROZEN, self::SUCCESS, self::FAILED],
             self::FROZEN => [self::IN_PROGRESS],
-            self::OVERDUE => [self::ASSIGNED, self::IN_PROGRESS, self::SUCCESS, self::FAILED],
+            self::OVERDUE => [self::IN_PROGRESS],
             default => [],
         };
     }
