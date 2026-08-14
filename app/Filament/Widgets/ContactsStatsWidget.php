@@ -3,7 +3,9 @@
 namespace App\Filament\Widgets;
 
 use App\Enums\ContactStatus;
+use App\Filament\Resources\ContactResource;
 use App\Models\Contact;
+use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -11,7 +13,7 @@ class ContactsStatsWidget extends BaseWidget
 {
     protected static ?int $sort = 1;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected function getHeading(): string
     {
@@ -34,7 +36,7 @@ class ContactsStatsWidget extends BaseWidget
         $success = Contact::where('status', ContactStatus::SUCCESS)->count();
         $failed = Contact::where('status', ContactStatus::FAILED)->count();
         $newThisWeek = Contact::where('created_at', '>=', now()->subWeek())->count();
-        
+
         $successRate = $total > 0 ? round(($success / $total) * 100, 1) : 0;
         $assignedRate = $total > 0 ? round(($assigned / $total) * 100, 1) : 0;
         $inProgressRate = $total > 0 ? round(($inProgress / $total) * 100, 1) : 0;
@@ -55,47 +57,68 @@ class ContactsStatsWidget extends BaseWidget
                 ->icon('heroicon-o-document-text')
                 ->chart($chartData),
 
-            Stat::make('Ожидают обработки', number_format($awaiting, 0, ',', ' '))
-                ->description($total > 0 ? round(($awaiting / $total) * 100, 1) . '%' : '0%')
-                ->descriptionIcon('heroicon-m-clock')
-                ->color(ContactStatus::NOT_PROCESSED->getColor())
-                ->icon('heroicon-o-pause-circle'),
+            $this->statusStat(
+                Stat::make('Ожидают обработки', number_format($awaiting, 0, ',', ' '))
+                    ->description($total > 0 ? round(($awaiting / $total) * 100, 1).'%' : '0%')
+                    ->descriptionIcon('heroicon-m-clock')
+                    ->color(ContactStatus::NOT_PROCESSED->getColor())
+                    ->icon('heroicon-o-pause-circle'),
+                ContactStatus::NOT_PROCESSED,
+            ),
 
-            Stat::make(ContactStatus::ASSIGNED->getLabel(), number_format($assigned, 0, ',', ' '))
-                ->description($assignedRate . '% в очереди')
-                ->descriptionIcon('heroicon-m-user-plus')
-                ->color(ContactStatus::ASSIGNED->getColor())
-                ->icon('heroicon-o-inbox'),
+            $this->statusStat(
+                Stat::make(ContactStatus::ASSIGNED->getLabel(), number_format($assigned, 0, ',', ' '))
+                    ->description($assignedRate.'% в очереди')
+                    ->descriptionIcon('heroicon-m-user-plus')
+                    ->color(ContactStatus::ASSIGNED->getColor())
+                    ->icon('heroicon-o-inbox'),
+                ContactStatus::ASSIGNED,
+            ),
 
-            Stat::make(ContactStatus::IN_PROGRESS->getLabel(), number_format($inProgress, 0, ',', ' '))
-                ->description($inProgressRate . '% активных')
-                ->descriptionIcon('heroicon-m-arrow-path')
-                ->color(ContactStatus::IN_PROGRESS->getColor())
-                ->icon('heroicon-o-cog-6-tooth'),
+            $this->statusStat(
+                Stat::make(ContactStatus::IN_PROGRESS->getLabel(), number_format($inProgress, 0, ',', ' '))
+                    ->description($inProgressRate.'% активных')
+                    ->descriptionIcon('heroicon-m-arrow-path')
+                    ->color(ContactStatus::IN_PROGRESS->getColor())
+                    ->icon('heroicon-o-cog-6-tooth'),
+                ContactStatus::IN_PROGRESS,
+            ),
 
-            Stat::make(ContactStatus::FROZEN->getLabel(), number_format($frozen, 0, ',', ' '))
-                ->description($total > 0 ? round(($frozen / $total) * 100, 1) . '%' : '0%')
-                ->descriptionIcon('heroicon-m-pause')
-                ->color(ContactStatus::FROZEN->getColor())
-                ->icon('heroicon-o-pause-circle'),
+            $this->statusStat(
+                Stat::make(ContactStatus::FROZEN->getLabel(), number_format($frozen, 0, ',', ' '))
+                    ->description($total > 0 ? round(($frozen / $total) * 100, 1).'%' : '0%')
+                    ->descriptionIcon('heroicon-m-pause')
+                    ->color(ContactStatus::FROZEN->getColor())
+                    ->icon('heroicon-o-pause-circle'),
+                ContactStatus::FROZEN,
+            ),
 
-            Stat::make('Просрочено', number_format($overdue, 0, ',', ' '))
-                ->description($overdueRate . '%')
-                ->descriptionIcon('heroicon-m-exclamation-triangle')
-                ->color(ContactStatus::OVERDUE->getColor())
-                ->icon('heroicon-o-clock'),
+            $this->statusStat(
+                Stat::make('Просрочено', number_format($overdue, 0, ',', ' '))
+                    ->description($overdueRate.'%')
+                    ->descriptionIcon('heroicon-m-exclamation-triangle')
+                    ->color(ContactStatus::OVERDUE->getColor())
+                    ->icon('heroicon-o-clock'),
+                ContactStatus::OVERDUE,
+            ),
 
-            Stat::make(ContactStatus::SUCCESS->getLabel(), number_format($success, 0, ',', ' '))
-                ->description($successRate . '% успешных')
-                ->descriptionIcon('heroicon-m-check-circle')
-                ->color(ContactStatus::SUCCESS->getColor())
-                ->icon('heroicon-o-check-badge'),
+            $this->statusStat(
+                Stat::make(ContactStatus::SUCCESS->getLabel(), number_format($success, 0, ',', ' '))
+                    ->description($successRate.'% успешных')
+                    ->descriptionIcon('heroicon-m-check-circle')
+                    ->color(ContactStatus::SUCCESS->getColor())
+                    ->icon('heroicon-o-check-badge'),
+                ContactStatus::SUCCESS,
+            ),
 
-            Stat::make(ContactStatus::FAILED->getLabel(), number_format($failed, 0, ',', ' '))
-                ->description($total > 0 ? round(($failed / $total) * 100, 1) . '%' : '0%')
-                ->descriptionIcon('heroicon-m-x-circle')
-                ->color(ContactStatus::FAILED->getColor())
-                ->icon('heroicon-o-x-circle'),
+            $this->statusStat(
+                Stat::make(ContactStatus::FAILED->getLabel(), number_format($failed, 0, ',', ' '))
+                    ->description($total > 0 ? round(($failed / $total) * 100, 1).'%' : '0%')
+                    ->descriptionIcon('heroicon-m-x-circle')
+                    ->color(ContactStatus::FAILED->getColor())
+                    ->icon('heroicon-o-x-circle'),
+                ContactStatus::FAILED,
+            ),
 
             Stat::make('Новых за неделю', number_format($newThisWeek, 0, ',', ' '))
                 ->description('За 7 дней')
@@ -103,5 +126,49 @@ class ContactsStatsWidget extends BaseWidget
                 ->color('brown')
                 ->icon('heroicon-o-star'),
         ];
+    }
+
+    protected function statusStat(Stat $stat, ContactStatus $status): Stat
+    {
+        $url = $this->filteredContactsUrl($status);
+
+        if ($url === null) {
+            return $stat;
+        }
+
+        return $stat->url($url);
+    }
+
+    protected function filteredContactsUrl(ContactStatus $status): ?string
+    {
+        if (! $this->userCanUseContactFilters()) {
+            return null;
+        }
+
+        return ContactResource::getUrl('index', [
+            'filters' => [
+                'status' => [
+                    'value' => $status->value,
+                ],
+                'my_contacts' => [
+                    'isActive' => false,
+                ],
+            ],
+        ]);
+    }
+
+    protected function userCanUseContactFilters(): bool
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        if ($user->hasRole('leader') && ! $user->can_use_contact_filters) {
+            return false;
+        }
+
+        return true;
     }
 }
