@@ -3,11 +3,12 @@
 namespace App\Filament\Resources\ManagementResource\Pages;
 
 use App\Enums\CommentsContext;
+use App\Enums\ContactStatus;
 use App\Filament\Resources\ManagementResource;
 use App\Filament\Support\ContactCommentsSection;
 use App\Filament\Support\ContactFreezeFields;
+use App\Filament\Support\ContactInfoCopy;
 use App\Filament\Support\PhoneDisplay;
-use App\Enums\ContactStatus;
 use Filament\Actions;
 use Filament\Infolists\Components;
 use Filament\Resources\Pages\ViewRecord;
@@ -30,6 +31,9 @@ class ViewManagement extends ViewRecord
         return $schema
             ->components([
                 SchemaComponents\Section::make('Информация о контакте')
+                    ->headerActions([
+                        ContactInfoCopy::action(),
+                    ])
                     ->schema([
                         Components\TextEntry::make('full_name')
                             ->label('ФИО'),

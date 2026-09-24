@@ -6,11 +6,12 @@ use App\Enums\CommentsContext;
 use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ManagementResource\Pages;
-use App\Filament\Support\ContactTableColumns;
-use App\Filament\Support\ContactTableSearch;
 use App\Filament\Support\ContactCommentsSection;
 use App\Filament\Support\ContactFreezeFields;
+use App\Filament\Support\ContactInfoCopy;
 use App\Filament\Support\ContactPhotoFields;
+use App\Filament\Support\ContactTableColumns;
+use App\Filament\Support\ContactTableSearch;
 use App\Filament\Support\PhoneDisplay;
 use App\Models\Contact;
 use App\Models\User;
@@ -19,14 +20,14 @@ use BackedEnum;
 use Closure;
 use Filament\Actions;
 use Filament\Forms\Components;
-use Filament\Schemas\Components\Utilities\Set;
+use Filament\Forms\Components\Field;
 use Filament\Panel;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components as SchemaComponents;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Columns;
-use Filament\Forms\Components\Field;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
@@ -35,7 +36,7 @@ class ManagementResource extends Resource
 {
     protected static ?string $model = Contact::class;
 
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     protected static ?string $modelLabel = 'контакт';
 
@@ -65,6 +66,9 @@ class ManagementResource extends Resource
                 SchemaComponents\Section::make()
                     ->schema([
                         SchemaComponents\Section::make('Основная информация')
+                            ->headerActions([
+                                ContactInfoCopy::action(),
+                            ])
                             ->schema([
                                 Components\TextInput::make('full_name')
                                     ->label('ФИО')

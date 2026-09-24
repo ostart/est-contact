@@ -6,6 +6,7 @@ use App\Enums\ContactSource;
 use App\Enums\ContactStatus;
 use App\Filament\Resources\ContactResource\Pages;
 use App\Filament\Resources\ContactResource\Pages\ListContacts;
+use App\Filament\Support\ContactInfoCopy;
 use App\Filament\Support\ContactPhotoFields;
 use App\Filament\Support\ContactTableColumns;
 use App\Filament\Support\ContactTableSearch;
@@ -57,6 +58,9 @@ class ContactResource extends Resource
         return $schema
             ->components([
                 SchemaComponents\Section::make('Основная информация')
+                    ->headerActions([
+                        ContactInfoCopy::action(),
+                    ])
                     ->schema([
                         Components\TextInput::make('full_name')
                             ->label('ФИО')
