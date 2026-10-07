@@ -38,4 +38,26 @@ class ContactTableSearchTest extends TestCase
 
         $this->assertStringContainsString('0 = 1', $query->toSql());
     }
+
+    public function test_apply_comment_search_matches_related_comment_text(): void
+    {
+        $query = Contact::query();
+
+        ContactTableSearch::applyCommentSearch($query, '100%_note');
+
+        $sql = strtolower($query->toSql());
+
+        $this->assertStringContainsString('contact_comments', $sql);
+        $this->assertStringContainsString('like', $sql);
+        $this->assertSame(['%100\\%\\_note%'], $query->getBindings());
+    }
+
+    public function test_apply_comment_search_ignores_blank_input(): void
+    {
+        $query = Contact::query();
+
+        ContactTableSearch::applyCommentSearch($query, '   ');
+
+        $this->assertStringNotContainsString('contact_comments', strtolower($query->toSql()));
+    }
 }

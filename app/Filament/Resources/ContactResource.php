@@ -315,6 +315,11 @@ class ContactResource extends Resource
         }
 
         return $table
+            ->searchable([
+                function (Builder $query, string $search): void {
+                    ContactTableSearch::applyCommentSearch($query, $search);
+                },
+            ])
             ->recordActions([
                 Actions\ViewAction::make()
                     ->iconButton()

@@ -297,6 +297,11 @@ class ManagementResource extends Resource
                         ->successRedirectUrl(ManagementResource::getUrl('index')),
                 ]),
             ])
+            ->searchable([
+                function (Builder $query, string $search): void {
+                    ContactTableSearch::applyCommentSearch($query, $search);
+                },
+            ])
             ->reorderableColumns()
             ->defaultKeySort(false);
     }

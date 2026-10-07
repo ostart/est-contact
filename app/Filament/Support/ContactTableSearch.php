@@ -21,6 +21,22 @@ final class ContactTableSearch
         );
     }
 
+    public static function applyCommentSearch(Builder $query, string $search): void
+    {
+        $search = trim($search);
+        if ($search === '') {
+            return;
+        }
+
+        $like = '%'.addcslashes($search, '%_\\').'%';
+
+        $query->whereHas('comments', function (Builder $comments) use ($like): void {
+            $operator = $comments->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+
+            $comments->reorder()->where('comment', $operator, $like);
+        });
+    }
+
     public static function applyStatusSearch(Builder $query, string $search): void
     {
         $values = ContactStatus::valuesMatchingLabelSearch($search);
